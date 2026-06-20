@@ -8,21 +8,6 @@ This README is about *how I thought about the product*, not a list of features.
 
 ---
 
-## Run it
-
-```bash
-docker compose up --build
-# web → http://localhost:8080
-# api → http://localhost:4000/graphql
-```
-
-- **Recommended: run with an Anthropic API key.** Add `ANTHROPIC_API_KEY` to a `.env` file to use the real Claude Haiku 4.5 model for accurate, context-aware follow-up extraction.
-- **No API key? No problem.** Without the key it falls back to a built-in rule-based extractor — the app runs fully offline, but suggestions will be simpler and less accurate.
-- The database comes pre-filled with 6 sample contacts.
-- No Docker? `npm install`, then `npm run dev:api` / `dev:extraction` / `dev:web`.
-
----
-
 ## The problem I'm solving
 
 People are great at collecting contacts and bad at following up. The tap is easy; the follow-through is the hard, valuable part — it's where relationships and deals are won or lost. If Blinq makes the follow-up almost automatic, people get more from every contact and keep coming back. That outcome is what I aimed at.
@@ -70,6 +55,7 @@ So Taperoot is a thin follow-up layer on top of what Blinq already does, not a p
 - Does the recorder ever tell us who each speaker is? (Changes how much we can auto-fill.)
 - Is "follow up" just a reminder, or should we send the message for them?
 - Transcripts are private — who can see them, and for how long?
+- The follow-up extraction could run automatically in the background — triggered by a GCP Pub/Sub event whenever a new conversation or note is added — so suggestions appear without any user action. The "Generate follow-ups" button in this repo exists to demo the feature; in a real integration it would be replaced by an async pipeline.
 
 ---
 
@@ -105,3 +91,105 @@ So it runs anywhere and stays easy to change:
 5. Smarter search ("who did I meet in fintech?").
 6. Actually send the follow-up.
 7. Multiple users and login.
+
+---
+
+## Run it
+
+**Recommended: run with an Anthropic API key** (`ANTHROPIC_API_KEY` in `.env`) to use Claude Haiku 4.5 for accurate follow-up extraction. Without it the app still runs using a built-in rule-based extractor, but suggestions will be simpler and less accurate.
+
+The database comes pre-filled with 6 sample contacts.
+
+### With Docker
+
+```bash
+cp .env.example .env          # add ANTHROPIC_API_KEY if you have one
+docker compose up --build
+# web → http://localhost:8080
+# api → http://localhost:4000/graphql
+```
+
+### Without Docker
+
+```bash
+cp .env.example .env          # set DATABASE_URL=file:./data/taperoot.db
+npm install
+npm run db:setup              # migrate + seed (run once, or after resetting the DB)
+
+# run each in a separate terminal
+npm run dev:api               # GraphQL API  → :4000
+npm run dev:extraction        # gRPC service → :50051
+npm run dev:web               # Vite dev server → :5173
+```
+
+---
+
+## Technical overview
+
+### Tech stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, TypeScript, Vite, urql (GraphQL client) |
+| API | Node.js, TypeScript, GraphQL Yoga, Pothos (schema builder), Prisma |
+| Database | SQLite (file-based, Prisma-managed) |
+| Extraction service | Node.js, TypeScript, gRPC server, Anthropic SDK (Claude Haiku 4.5) |
+| API ↔ Extraction transport | gRPC / Protocol Buffers |
+| Monorepo tooling | npm workspaces, tsx |
+| E2E tests | Playwright |
+
+### Folder structure
+
+```
+taperoot/
+├── services/
+│   ├── api/                  # GraphQL API (Yoga + Prisma + Pothos)
+│   │   ├── prisma/           # Schema, migrations, seed data
+│   │   └── src/
+│   │       ├── schema/       # GraphQL types and resolvers (Pothos)
+│   │       ├── lib/          # Utilities (logger, transcript helpers)
+│   │       └── extraction-client.ts  # gRPC client wrapper
+│   └── extraction/           # gRPC extraction service
+│       └── src/
+│           ├── extractors/   # Anthropic extractor + mock fallback
+│           └── grpc/         # gRPC server setup
+├── web/                      # React SPA (Vite)
+│   └── src/
+│       └── features/         # contacts list, notetaker view
+├── proto/                    # Shared protobuf definition (extraction.proto)
+├── data/                     # SQLite database (volume-mounted, git-ignored)
+├── scripts/                  # Dev and test scripts
+└── docker-compose.yml
+```
+
+### Architecture
+
+```
+┌──────────────────────────────┐
+│  Browser                     │
+│  React + urql                │
+└──────────┬───────────────────┘
+           │ GraphQL over HTTP
+┌──────────▼───────────────────┐
+│  API service  :4000          │
+│  GraphQL Yoga + Prisma       │
+│  SQLite  (./data/taperoot.db)│
+└──────────┬───────────────────┘
+           │ gRPC (protobuf)
+┌──────────▼───────────────────┐
+│  Extraction service  :50051  │
+│  Anthropic SDK / mock        │
+└──────────────────────────────┘
+```
+
+### Data flow — generating follow-ups
+
+1. User opens a contact and clicks **Generate follow-ups**.
+2. Web sends a `generateFollowups` GraphQL mutation to the API.
+3. API loads the contact's notes and conversations from SQLite.
+4. API serialises the context and calls the Extraction service over gRPC.
+5. Extraction service sends the context to Claude Haiku (or the mock extractor if no API key is set).
+6. Model returns extracted actions (with optional due dates) and AI-generated conversation notes.
+7. API persists the results to SQLite — skipping any follow-ups already marked done or manually written.
+8. Web re-queries and renders the updated follow-up list.
+

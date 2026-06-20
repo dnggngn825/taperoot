@@ -7,6 +7,7 @@
     "web"
   ],
   "scripts": {
+    "db:setup": "tsx --env-file=.env scripts/setup-db.ts",
     "dev:api": "npm run dev --workspace=services/api",
     "dev:extraction": "npm run dev --workspace=services/extraction",
     "dev:web": "npm run dev --workspace=web",
