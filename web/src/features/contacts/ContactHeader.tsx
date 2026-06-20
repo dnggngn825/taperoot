@@ -22,7 +22,11 @@ export function ContactHeader({ contact, canGenerate, isProcessing, onGenerate }
           <a href={`mailto:${contact.email}`} style={{ fontSize: 13, color: 'var(--coral-deep)', textDecoration: 'none' }}>{contact.email}</a>
         )}
       </div>
-      <button onClick={onGenerate} disabled={!enabled} style={{
+      <button onClick={onGenerate} disabled={!enabled} title={
+        isProcessing ? 'AI is generating follow-ups…'
+        : !canGenerate ? 'Add a note or conversation first'
+        : 'Extract follow-ups and notes from this contact\u2019s history'
+      } style={{
         padding: '8px 18px', borderRadius: 'var(--r-pill)', border: 'none', cursor: enabled ? 'pointer' : 'not-allowed',
         background: enabled ? 'var(--coral)' : 'var(--panel-track)',
         color: enabled ? '#fff' : 'var(--muted)',
