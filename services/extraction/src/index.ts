@@ -4,6 +4,8 @@ import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import type { ContactContext } from './types.js';
 import { MockExtractor } from './mock-extractor.js';
+import { AnthropicExtractor } from './anthropic-extractor.js';
+import type { Extractor } from './types.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROTO_PATH = path.resolve(__dirname, '../../../proto/extraction.proto');
@@ -20,7 +22,16 @@ const packageDef = protoLoader.loadSync(PROTO_PATH, {
 const proto = grpc.loadPackageDefinition(packageDef) as any;
 const ExtractionService = proto.extraction.v1.ExtractionService;
 
-const extractor = new MockExtractor();
+// Selector: use Anthropic if key present, else deterministic mock
+const apiKey = process.env.ANTHROPIC_API_KEY;
+let extractor: Extractor;
+if (apiKey) {
+  extractor = new AnthropicExtractor(apiKey);
+  console.log('[extraction] extractor: AnthropicExtractor (claude-haiku-4-5-20251001)');
+} else {
+  extractor = new MockExtractor();
+  console.log('[extraction] extractor: MockExtractor (no ANTHROPIC_API_KEY — keyless mode)');
+}
 
 async function generateForContact(
   call: grpc.ServerUnaryCall<{ contact_id: string; context: ContactContext }, unknown>,
@@ -50,5 +61,4 @@ server.bindAsync(addr, grpc.ServerCredentials.createInsecure(), (err, boundPort)
     process.exit(1);
   }
   console.log(`[extraction] gRPC server listening :${boundPort}`);
-  console.log(`[extraction] extractor: MockExtractor (keyless)`);
 });

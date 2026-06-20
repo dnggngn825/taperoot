@@ -40,9 +40,9 @@
 
 ## Phase 4 — Extraction service: real Haiku 4.5
 
-- [ ] With key: a seeded conversation yields a note + sensible actions (manual eyeball)
-- [ ] Without key: falls back to mock; service still works
-- [ ] Startup log states which extractor is active
+- [x] With key: a seeded conversation yields a note + sensible actions (manual eyeball)
+- [x] Without key: falls back to mock; service still works
+- [x] Startup log states which extractor is active
 
 ---
 
