@@ -3,6 +3,8 @@
 > Execution checklist for the build. Companion to [DESIGN.md](./DESIGN.md).
 > Each phase has: **Goal** · **Tasks** · **Exit checklist** (must all pass before the next phase).
 > Build order follows the rule: **backend → server logic → API → UI**, with a cumulative click-through after each.
+>
+> **Exit checklists are tracked live in [CHECKLIST.md](./CHECKLIST.md) — tick items off there after each phase.**
 
 ---
 
@@ -174,7 +176,7 @@
 - [ ] `Mutation.generateForContact(contactId, mode)` — internal helper used by both paths below; eligibility guard (no notes + no convos → stay `idle`); set `contact.aiStatus: processing`; return immediately; spawn gRPC as background promise; on resolve persist + set `aiStatus: done|failed`
 - [ ] **Convo path** (explicit button): passes all conversations + all notes to extractor → produces AI notes (one per convo) + followups
 - [ ] **Notes-only path** (auto-trigger): `addNote` resolver calls `generateForContact` after saving; passes **latest note only** to extractor → produces followups only (no new note entries)
-- [ ] Idempotency on persist: delete `origin=ai` notes + `origin=ai, status=open` followups for contact; insert fresh; never touch `origin=manual` notes or `origin=user`/`status=done` followups
+- [ ] Idempotency on persist: delete `origin=ai` notes + `origin=ai, status=open` followups for contact; insert fresh; never touch `origin=manual` notes or `origin=manual`/`status=done` followups
 - [ ] `scripts/test-api.ts` — backend test script covering: search, addNote (auto-trigger on notes-only), generateForContact (poll until done), idempotency (generate twice = same set), updateFollowup, addConversation, eligibility guard
 
 **Exit checklist**
@@ -238,7 +240,7 @@
 - [ ] Hover AI note → meatball → edit form → save → updated body persists
 - [ ] Hover AI followup → meatball → edit → save → updated description persists
 - [ ] `+ Note` creates note with `origin: manual` (no sparkle)
-- [ ] `+ Task` creates followup with `origin: user` (no sparkle); survives regeneration
+- [ ] `+ Task` creates followup with `origin: manual` (no sparkle); survives regeneration
 - [ ] Transcript textarea: paste `Speaker 1: hi\nSpeaker 2: hello` → Save → conversation appears in sidebar; no auto-trigger
 - [ ] `mailto:` opens prefilled with contact email + action body
 - [ ] A 3-speaker transcript renders fine
