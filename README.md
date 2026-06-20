@@ -6,6 +6,8 @@ A Blinq tap *starts* a relationship. But what happens next — who they were, wh
 
 ![Taperoot contact detail — notes, AI-generated follow-ups, and the Generate button](doc/screenshot.png)
 
+![Taperoot notetaker detail](doc/screenshot-2.png)
+
 This README is about *how I thought about the product*, not a list of features.
 
 ---
