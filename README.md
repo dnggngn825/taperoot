@@ -1,1 +1,2 @@
 # taperoot
+A small full-stack app that lets a Blinq user keep track of the contacts they meet and the context around each relationship, so that following up is easy rather than something they forget to do.
