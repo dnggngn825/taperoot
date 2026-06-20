@@ -1,0 +1,23 @@
+{
+  "name": "taperoot",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "services/*",
+    "web"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace=services/api",
+    "dev:extraction": "npm run dev --workspace=services/extraction",
+    "dev:web": "npm run dev --workspace=web",
+    "test:api": "tsx scripts/test-api.ts",
+    "test:e2e": "playwright test",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0"
+  }
+}

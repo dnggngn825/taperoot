@@ -1,0 +1,46 @@
+services:
+  extraction:
+    build:
+      context: .
+      dockerfile: services/extraction/Dockerfile
+    ports:
+      - "${EXTRACTION_PORT:-50051}:50051"
+    environment:
+      EXTRACTION_PORT: "50051"
+    networks:
+      - taperoot
+
+  api:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    ports:
+      - "${API_PORT:-4000}:4000"
+    environment:
+      API_PORT: "4000"
+      DATABASE_URL: "file:/data/taperoot.db"
+      EXTRACTION_ADDR: "extraction:50051"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+    volumes:
+      - ./data:/data
+    depends_on:
+      - extraction
+    networks:
+      - taperoot
+
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+    environment:
+      VITE_API_URL: "http://localhost:4000/graphql"
+    depends_on:
+      - api
+    networks:
+      - taperoot
+
+networks:
+  taperoot:
+    driver: bridge
