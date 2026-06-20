@@ -37,6 +37,7 @@ So Taperoot is a thin follow-up layer on top of what Blinq already does, not a p
 
 **Left out on purpose** (didn't add enough user value to justify the cost):
 
+- **Search** — the brief flags finding a person again as *the* problem as a list grows. With the ~3-hour budget and only a handful of contacts, the list + detail view is enough to prove the follow-up value, so I spent the time there. Basic name/company search is the first thing I'd add next.
 - Working out who each speaker is. Nice to have, but the follow-ups don't need it.
 - Sending the email for you — a draft is enough to prove the value.
 - Multi-contact conversations. In Blinq, a user can tag multiple contacts in one conversation so each person sees it on their device. Taperoot scopes each conversation to a single contact — the data model would need a many-to-many join to support it fully.
@@ -54,12 +55,11 @@ So Taperoot is a thin follow-up layer on top of what Blinq already does, not a p
 
 ---
 
-## Directions to explore
+## Questions I'd ask a PM
 
 - Does the recorder ever tell us who each speaker is? (Changes how much we can auto-fill.)
 - Is "follow up" just a reminder, or should we send the message for them?
 - Transcripts are private — who can see them, and for how long?
-- The follow-up extraction could run automatically in the background — triggered by a GCP Pub/Sub event whenever a new conversation or note is added — so suggestions appear without any user action. The "Generate follow-ups" button in this repo exists to demo the feature; in a real integration it would be replaced by an async pipeline.
 
 ---
 
@@ -78,6 +78,7 @@ So it runs anywhere and stays easy to change:
 
 - A GraphQL API over a small SQLite database — one query loads a contact and everything attached to it.
 - The AI runs as its own small service, so the model is easy to swap. With no API key it falls back to a rule-based version, so the app always runs.
+- The **Generate follow-ups** button is a demo stand-in. In a real integration, extraction would run automatically in the background — triggered by a GCP Pub/Sub event whenever a new conversation or note is added — so suggestions appear with no user action.
 - **Trade-offs I accepted:**
   - *SQLite over a hosted database:* SQLite lives in a single file alongside the app — no server to run, no credentials to manage. It's the right call for a single-user prototype; switching to Postgres later is a one-line Prisma change.
   - *AI as a separate service:* running the extractor as its own process is slightly more infrastructure than a prototype needs. The payoff is that the rest of the app never knows which model is running — swapping the model, or folding the service back into the API, requires no changes outside the AI service itself.
