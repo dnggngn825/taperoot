@@ -6,16 +6,15 @@
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
-    "migrate:dev": "prisma migrate dev",
-    "migrate:deploy": "prisma migrate deploy",
+    "migrate:dev": "prisma migrate dev --env-file ../../.env",
+    "migrate:deploy": "prisma migrate deploy --env-file ../../.env",
     "db:seed": "prisma db seed"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx --env-file=../../.env prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
-    "dotenv": "^17.4.2",
     "prisma": "^5.22.0"
   }
 }
