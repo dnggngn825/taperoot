@@ -1,6 +1,5 @@
 const AVATAR_TONES = ['#F3D3C7', '#CFE0E6', '#D7DEC6', '#E6D2C2', '#DDD4E6', '#E8DEC8'];
 
-// Stable tone by contact id hash so colour doesn't shift on re-render
 export function toneForId(id: string): string {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;

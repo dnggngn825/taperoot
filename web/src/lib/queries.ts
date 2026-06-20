@@ -9,6 +9,7 @@ export const CONTACTS_QUERY = `
       aiStatus
       openFollowupCount
       lastActivityAt
+      conversations { id }
     }
   }
 `;
@@ -52,11 +53,5 @@ export const UPDATE_NOTE_MUTATION = `
 export const UPDATE_FOLLOWUP_MUTATION = `
   mutation UpdateFollowup($id: ID!, $status: String, $description: String) {
     updateFollowup(id: $id, status: $status, description: $description) { id status description }
-  }
-`;
-
-export const ADD_CONVERSATION_MUTATION = `
-  mutation AddConversation($contactId: ID!, $rawTranscript: String!, $convoDate: String!) {
-    addConversation(contactId: $contactId, rawTranscript: $rawTranscript, convoDate: $convoDate) { id }
   }
 `;
