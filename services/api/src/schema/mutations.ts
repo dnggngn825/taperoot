@@ -74,6 +74,31 @@ builder.mutationField('updateNote', (t) =>
 );
 
 
+builder.mutationField('addFollowup', (t) =>
+  t.prismaField({
+    type: 'Followup',
+    args: {
+      contactId: t.arg.id({ required: true }),
+      description: t.arg.string({ required: true }),
+      dueDate: t.arg.string(),
+    },
+    resolve: async (query, _root, args) => {
+      return prisma.followup.create({
+        ...query,
+        data: {
+          contactId: String(args.contactId),
+          description: args.description,
+          dueDate: args.dueDate ? parseDate(args.dueDate, 'dueDate') : null,
+          status: 'open',
+          sourceType: 'manual',
+          origin: 'manual',
+        },
+      });
+    },
+  }),
+);
+
+
 builder.mutationField('updateFollowup', (t) =>
   t.prismaField({
     type: 'Followup',

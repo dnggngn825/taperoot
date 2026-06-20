@@ -6,6 +6,7 @@ import {
   ADD_NOTE_MUTATION,
   UPDATE_NOTE_MUTATION,
   UPDATE_FOLLOWUP_MUTATION,
+  ADD_FOLLOWUP_MUTATION,
 } from '../lib/queries.ts';
 import type { ContactDetail } from '../types.ts';
 
@@ -21,6 +22,7 @@ export function useContactDetail(id: string | null, onMutated?: () => void) {
   const [, addNoteM] = useMutation(ADD_NOTE_MUTATION);
   const [, updateNoteM] = useMutation(UPDATE_NOTE_MUTATION);
   const [, updateFollowupM] = useMutation(UPDATE_FOLLOWUP_MUTATION);
+  const [, addFollowupM] = useMutation(ADD_FOLLOWUP_MUTATION);
 
   const contact: ContactDetail | null = data?.contact ?? null;
   const isProcessing = contact?.aiStatus === 'processing';
@@ -29,6 +31,8 @@ export function useContactDetail(id: string | null, onMutated?: () => void) {
   const [mutationError, setMutationError] = useState<string | null>(null);
 
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const wasProcessingRef = useRef(false);
+
   useEffect(() => {
     if (isProcessing) {
       pollingRef.current = setInterval(() => refetch({ requestPolicy: 'network-only' }), 2000);
@@ -37,6 +41,13 @@ export function useContactDetail(id: string | null, onMutated?: () => void) {
     }
     return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
   }, [isProcessing, refetch]);
+
+  useEffect(() => {
+    if (wasProcessingRef.current && !isProcessing && contact) {
+      onMutated?.();
+    }
+    wasProcessingRef.current = isProcessing;
+  }, [isProcessing, contact, onMutated]);
 
   const reload = () => {
     refetch({ requestPolicy: 'network-only' });
@@ -86,5 +97,15 @@ export function useContactDetail(id: string | null, onMutated?: () => void) {
     reload();
   };
 
-  return { contact, fetching, isProcessing, isSaving, mutationError, generate, addNote, updateNote, tickFollowup, saveFollowup, reload };
+  const addFollowup = async (description: string, dueDate: string | null) => {
+    if (!id || !description.trim()) return;
+    setMutationError(null);
+    setIsSaving(true);
+    const res = await addFollowupM({ contactId: id, description, ...(dueDate ? { dueDate } : {}) });
+    setIsSaving(false);
+    if (res.error) { setMutationError(res.error.message); return; }
+    reload();
+  };
+
+  return { contact, fetching, isProcessing, isSaving, mutationError, generate, addNote, updateNote, addFollowup, tickFollowup, saveFollowup, reload };
 }

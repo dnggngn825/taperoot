@@ -5,7 +5,7 @@ import { NotesSection } from './NotesSection.tsx';
 import { FollowupsSection } from './FollowupsSection.tsx';
 
 export function ContactDetail({ contactId, onMutated }: { contactId: string; onMutated?: () => void }) {
-  const { contact, fetching, isProcessing, isSaving, mutationError, generate, addNote, updateNote, tickFollowup, saveFollowup } = useContactDetail(contactId, onMutated);
+  const { contact, fetching, isProcessing, isSaving, mutationError, generate, addNote, updateNote, addFollowup, tickFollowup, saveFollowup } = useContactDetail(contactId, onMutated);
 
   if (fetching && !contact) return <div style={{ padding: 32, color: 'var(--muted)' }}>Loading…</div>;
   if (!contact) return <div style={{ padding: 32, color: 'var(--muted)' }}>Not found</div>;
@@ -22,7 +22,7 @@ export function ContactDetail({ contactId, onMutated }: { contactId: string; onM
       <ContactHeader contact={contact} canGenerate={canGenerate} isProcessing={isProcessing} onGenerate={generate} />
       <StatCards contact={contact} />
       <NotesSection notes={contact.notes} isSaving={isSaving} onAddNote={addNote} onSaveNote={updateNote} />
-      <FollowupsSection followups={contact.followups} contactEmail={contact.email} isSaving={isSaving} onTick={tickFollowup} onSave={saveFollowup} />
+      <FollowupsSection followups={contact.followups} contactEmail={contact.email} isSaving={isSaving} onAdd={addFollowup} onTick={tickFollowup} onSave={saveFollowup} />
     </div>
   );
 }
