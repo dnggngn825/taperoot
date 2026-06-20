@@ -510,3 +510,148 @@ The README (read first by Blinq) will cover, in order:
 7. Trade-offs accepted.
 8. What I'd do next.
 ```
+
+---
+
+## 20. Integration surface — how to connect the pieces
+
+> This section exists to resolve the integration details that are not visible in the architecture diagram but cause the most build failures. An implementer (human or AI) should read this before writing any code.
+
+### 20.1 Dependency versions
+
+Pin these exactly. The major versions listed below have breaking changes that are not obvious from the documentation.
+
+| Package | Pin | Reason |
+|---|---|---|
+| `prisma` | `5.22.0` | v7 removes `url` from `schema.prisma`; requires `prisma.config.ts` instead |
+| `@pothos/core` | latest v3 | v4 API changed; stay on v3 |
+| `graphql-yoga` | latest v5 | v4 had different CORS API |
+| `@anthropic-ai/sdk` | latest | model name changes; always set `MODEL` env var explicitly |
+
+### 20.2 File path relationships
+
+Every path below is relative to the repository root.
+
+```
+proto/extraction.proto
+  ↳ services/api/src/extraction-client.ts
+      resolves as: path.resolve(__dirname, '../../../proto/extraction.proto')
+      (__dirname = services/api/src/, so ../../../ = repo root)
+  ↳ services/extraction/src/grpc/proto.ts
+      resolves as: path.resolve(__dirname, '../../../../proto/extraction.proto')
+      (__dirname = services/extraction/src/grpc/, so ../../../../ = repo root)
+
+data/taperoot.db
+  ↳ DATABASE_URL in .env = file:../../../data/taperoot.db
+      path is relative to services/api/prisma/schema.prisma
+      (3 levels up from services/api/prisma/ = repo root/data/)
+  ↳ In Docker: DATABASE_URL = file:/data/taperoot.db (absolute, volume-mounted)
+```
+
+### 20.3 Docker build requirements
+
+**API service** — must use `node:22-slim`, not alpine. Prisma's query engine binary requires OpenSSL.
+
+```dockerfile
+FROM node:22-slim
+RUN apt-get update && apt-get install -y openssl --no-install-recommends && rm -rf /var/lib/apt/lists/*
+# prisma generate must run at build time (not runtime) so the binary is baked in
+RUN cd services/api && npx prisma generate
+# migrate + seed at runtime (DB volume may be fresh)
+CMD sh -c "cd services/api && npx prisma migrate deploy && npx prisma db seed && cd /app && npx tsx services/api/src/index.ts"
+```
+
+**Extraction service** — proto file is not inside the service directory; must be explicitly copied.
+
+```dockerfile
+COPY proto ./proto          # ← without this, the gRPC server cannot load the schema
+COPY services/extraction ./services/extraction
+```
+
+**Web service** — Vite bakes env vars at build time. `VITE_API_URL` must be a build `ARG`, not a runtime `ENV`.
+
+```dockerfile
+ARG VITE_API_URL=http://localhost:4000/graphql
+RUN VITE_API_URL=$VITE_API_URL npm run build   # baked into the bundle here
+
+# Runtime stage: WORKDIR must be the directory containing vite.config.ts
+WORKDIR /app/web
+CMD ["npx", "vite", "preview", "--host", "0.0.0.0", "--port", "8080"]
+```
+
+### 20.4 Framework configuration traps
+
+**Pothos + Prisma plugin**
+
+The builder requires `dmmf` or the schema build silently omits Prisma types:
+```typescript
+const builder = new SchemaBuilder<{ PrismaTypes: PrismaTypes }>({
+  plugins: [PrismaPlugin],
+  prisma: {
+    client: prisma,
+    dmmf: Prisma.dmmf,   // ← required; omitting this causes cryptic type errors
+  },
+});
+```
+
+Prisma stores enums as strings in SQLite. `t.exposeString` will reject a string-backed enum field. Use:
+```typescript
+status: t.field({ type: FollowupStatusEnum, resolve: (f) => f.status as 'open' | 'done' }),
+```
+
+**urql + Vite**
+
+`import.meta.env` is not typed by default in TypeScript. Access it as:
+```typescript
+(import.meta as unknown as { env: { VITE_API_URL?: string } }).env.VITE_API_URL
+```
+
+**gRPC dynamic loading**
+
+Use these exact `loadSync` options or field names will be mangled:
+```typescript
+protoLoader.loadSync(PROTO_PATH, {
+  keepCase: true,   // ← preserves snake_case field names
+  longs: String,
+  enums: String,
+  defaults: true,
+  oneofs: true,
+})
+```
+
+### 20.5 Anthropic extraction contract
+
+```typescript
+// Model — pin this; haiku changes generation
+const MODEL = process.env.MODEL ?? 'claude-haiku-4-5-20251001';
+
+// Force tool use so the response is always structured JSON, never prose
+tool_choice: { type: 'tool', name: 'emit_results' }
+
+// Tool output shape
+{
+  notes:   [{ convo_id: string, text: string, date: string }],
+  actions: [{ description: string, due_date: string, source_type: 'note'|'conversation', source_id: string }]
+}
+
+// Fallback when ANTHROPIC_API_KEY is absent
+// MockExtractor: action-verb heuristic on note/transcript text + relative-date regex
+// ("next week" → +7 days, "by Friday" → +5 days, etc.)
+```
+
+### 20.6 Environment variables — full reference
+
+| Variable | Service | Default | Notes |
+|---|---|---|---|
+| `DATABASE_URL` | api | `file:../../../data/taperoot.db` | Path relative to `prisma/schema.prisma` |
+| `API_PORT` | api | `4000` | |
+| `EXTRACTION_ADDR` | api | `localhost:50051` | Use `extraction:50051` inside Docker compose |
+| `WEB_ORIGIN` | api | `http://localhost:5173,http://localhost:8080` | Comma-separated CORS allowlist |
+| `EXTRACTION_PORT` | extraction | `50051` | |
+| `ANTHROPIC_API_KEY` | extraction | *(absent)* | Falls back to MockExtractor when absent |
+| `MODEL` | extraction | `claude-haiku-4-5-20251001` | Override to test different models |
+| `VITE_API_URL` | web (build) | `http://localhost:4000/graphql` | Baked at build time; pass as Docker build ARG |
+
+### 20.7 Windows / WSL2 port note
+
+On Windows with WSL2, `localhost` resolves to `::1` (IPv6). Docker maps published ports to `0.0.0.0` (IPv4). Use `http://127.0.0.1:8080` in the browser, not `http://localhost:8080`. The WSL relay process (`wslrelay.exe`) often holds `[::1]:8080`, causing a conflict even when Docker appears healthy.
