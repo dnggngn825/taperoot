@@ -35,10 +35,8 @@ The rebuilt UI must be **visually indistinguishable** from the mockup at desktop
 | 2 | Click a contact row → detail updates; row shows selected style | `c.pick`, `sel`, `rowOn`/`rowOff` |
 | 3 | Click a conversation row → detail updates | `cv.pick`, `conv` |
 | 4 | Segmented control toggles AI summary ↔ Transcript | `setSummary`/`setTranscript`, `noteTab` |
-| 5 | "+ Add person" opens a dropdown of contacts not already attached | `toggleAdd`, `addOpen`, `availableContacts` |
-| 6 | Add a person → chip appears, dropdown closes | `a.add`, `people[conv]` |
-| 7 | Remove a person (×) → chip disappears | `p.remove` |
-| 8 | Per-conversation people persist while you switch convos | `people: Record<convIdx, contactIdx[]>` |
+
+> **People add/remove is out of scope.** The mockup's `+ Add person` dropdown and chip `×` (`toggleAdd`/`addOpen`/`a.add`/`p.remove`) are **not** reproduced. The Notetaker's People row is **display-only** — it shows who was involved in the conversation.
 
 Out of scope for *this* plan: real persistence, the AI generate flow, email drafts, auth — all owned by the parallel backend ([DESIGN §7–§10](./DESIGN.md#7-graphql-api)). UI affordances for them (buttons like **Log note**, **Ask AI**, **+ Note**, **Generate**) are rendered and wired to **stub handlers** so the layout is exact and the seam is ready.
 
@@ -58,7 +56,7 @@ Header (64px):  [Taper•t logo]  ( Contacts | Notetaker )            <count>   
 └─ NOTETAKER tab
     ├─ Sidebar 308px: "Conversations" list (waveform icon · title · date·duration)
     └─ Main: convo header (waveform, title, date·duration·channel, Ask AI/Share)
-             People row: attendee chips (×) + "+ Add person" dropdown
+             People row: attendee chips (people involved) — display-only
              Segmented: ( AI summary | Transcript )
              AI summary → summary card + Key points  /  Transcript → speaker turns (avatar, time, text)
 ```
@@ -78,7 +76,7 @@ Full token + layout values are extracted in [Appendix A](#appendix-a-exact-desig
 | Icons | **Inline SVG** (copied from the mockup) | Mockup uses hand-rolled SVGs/CSS bars; copy them 1:1 — no icon lib, no visual drift |
 | State | **React `useReducer` in one store + Context** | Mirrors the single `DCLogic` state object exactly; see [§7](#7-state-model) |
 | Routing | **None now** (tab = state). React Router optional later | Mockup has no URLs; keep it a state toggle to stay faithful |
-| Tests | **Vitest + React Testing Library** | One runner across the repo ([DESIGN §12](./DESIGN.md#12-tech-stack)); cover the 8 interactions in [§1](#1-fidelity-bar) |
+| Tests | **Vitest + React Testing Library** | One runner across the repo ([DESIGN §12](./DESIGN.md#12-tech-stack)); cover the 4 interactions in [§1](#1-fidelity-bar) |
 
 **No component/UI library** (no MUI/Chakra/Tailwind preset). The aesthetic is bespoke; a library would fight the exact spacing, radii, and palette. Tailwind is *optional* but tokens-as-CSS-vars is simpler for a 1:1 clone.
 
@@ -129,7 +127,7 @@ web/
    │     ├─ NotetakerView.tsx
    │     ├─ ConversationSidebar.tsx
    │     ├─ ConversationDetail.tsx  # header + PeopleRow + Segmented + body
-   │     ├─ PeopleRow.tsx           # chips + AddPerson dropdown
+   │     ├─ PeopleRow.tsx           # people chips (display-only)
    │     ├─ SummaryPanel.tsx        # summary card + key points
    │     ├─ TranscriptPanel.tsx     # speaker turns
    │     └─ *.module.css
@@ -160,10 +158,6 @@ export interface BackendClient {
   addNote(contactId: string, body: string, noteDate: string): Promise<void>     // → mutation addNote
   generateFollowups(contactId: string): Promise<Followup[]>                      // → mutation generateFollowups
   updateFollowup(id: string, patch: { status?: FollowupStatus; description?: string }): Promise<void> // → mutation updateFollowup
-
-  // UI-only for now — NOT in the backend schema yet (see §6, flagged)
-  attachPerson(conversationId: string, contactId: string): Promise<void>
-  detachPerson(conversationId: string, contactId: string): Promise<void>
 }
 ```
 
@@ -199,10 +193,6 @@ export function createInMemoryBackend(): BackendClient {
     },
     // TODO(backend): replace with urql mutation updateFollowup — DESIGN §7
     async updateFollowup() { /* no-op stub */ },
-
-    // UI-only state (see §6): persisted in component/store today, no server call.
-    async attachPerson() {},
-    async detachPerson() {},
   }
 }
 ```
@@ -250,9 +240,9 @@ The mockup is **richer than the backend model** in [DESIGN §6/§7](./DESIGN.md#
 | `title`, `duration`, `channel` | ❌ | **Mockup-only.** Flag → `Conversation.title/durationMin/channel`. Seeded for now |
 | `keyPoints[]` | ❌ | **Mockup-only** (part of "AI summary"). Flag → `Conversation.keyPoints`. Seeded for now |
 | `date` (`convoDate`) | ✅ `convoDate` | Direct map |
-| **attached people** (multi) | ⚠️ **conflict** | Backend models **one contact per conversation** ([DESIGN assumption #3](./DESIGN.md#3-assumptions)). The mockup attaches *several* contacts to a convo. **Open question for product/backend.** Today: UI-only state, no server call. |
+| **people involved** (display-only) | ✅ aligns | Add/remove is **out of scope** — the row only *displays* who was involved. Seeded one contact per conversation, which maps directly to the backend's one-contact-per-conversation model ([DESIGN assumption #3](./DESIGN.md#3-assumptions)). |
 
-> ⚠️ The **People-on-a-conversation** feature is the one genuine model conflict. The UI keeps it (faithful clone, local state), but it must be raised — either the schema gains a `Conversation ↔ Contact` many-to-many, or the feature is reframed. Listed in [§12](#12-open-questions).
+> The earlier multi-attach **People-on-a-conversation** conflict is **resolved by descoping**: add/remove is out of scope, so the row is display-only and shows one contact per conversation — exactly what the backend already models. No schema change needed.
 
 ### 6.3 Net
 For a faithful clone *now*, mockup-only fields live in `seed.ts` and the view-model types. None block the UI. They become a **backend follow-up list** (extend schema, or formally mark UI-only).
@@ -269,14 +259,11 @@ interface UIState {
   selectedContactId: string             // mockup: state.sel (index → id here)
   selectedConversationId: string        // mockup: state.conv
   noteTab: 'summary' | 'transcript'     // mockup: state.noteTab
-  peopleByConversation: Record<string, string[]>  // mockup: state.people
-  addPersonOpen: boolean                // mockup: state.addOpen
 }
 ```
 
-Actions: `SET_TAB`, `SELECT_CONTACT`, `SELECT_CONVERSATION` (also closes add), `SET_NOTE_TAB`, `TOGGLE_ADD`, `ATTACH_PERSON` (closes add), `DETACH_PERSON`.
-Initial `peopleByConversation` is seeded to match the mockup (`{conv0:[c0], conv1:[c1], conv2:[c2], conv3:[c4], conv4:[c5]}`).
-`availableContacts` (the add-dropdown source) is a **selector**: all contacts minus those already attached to the current conversation — exactly the mockup's `availableContacts`.
+Actions: `SET_TAB`, `SELECT_CONTACT`, `SELECT_CONVERSATION`, `SET_NOTE_TAB`.
+The conversation→people mapping is **static, display-only seed data** (`PEOPLE_BY_CONVERSATION`), not UI state — add/remove is out of scope, so there's no `peopleByConversation`/`addPersonOpen` in the reducer.
 
 Data (contacts/conversations) is loaded once from `BackendClient` into the store on mount; mutations call the client then update local state.
 
@@ -319,8 +306,8 @@ Vertical slices — each tab is built **end-to-end and verified against the mock
 | **P1** | **Data layer + placeholder backend** | `types.ts`; `seed.ts` (port **all** contact + conversation data verbatim from `DCLogic`); `backend.ts` (`BackendClient` + `createInMemoryBackend`); `derive.ts` (initials/tone/chipStyle) | Stub returns 6 contacts + 5 conversations; unit test: `listContacts('vertex')` filters; types compile |
 | **P2** | **Store + Header + tab switch** | `store.tsx` (reducer + context, seeded state); `Header.tsx` (logo, `NavTabs`, right-side count + CTA); App renders the two views by `tab` | Clicking Contacts/Notetaker swaps views; nav pill on/off styling exact; counts ("126 contacts"/"42 conversations") show per tab |
 | **P3** | **Contacts tab (full slice)** | `ContactSidebar` (search box + list + selected row style), `ContactDetail` (avatar, name, tag chips, role·company, email/phone pills, Log note/Edit), `StatCards`, `NotesTimeline`, `Followups` | Side-by-side with mockup Contacts tab = indistinguishable; selecting a row updates detail + highlight; timeline + follow-ups render for all 6 contacts; scrollbars match |
-| **P4** | **Notetaker tab (full slice)** | `ConversationSidebar` (waveform rows), `ConversationDetail` header, `PeopleRow` (chips + remove + AddPerson dropdown), `SegmentedControl`, `SummaryPanel`, `TranscriptPanel` | Side-by-side = indistinguishable; segmented toggles summary/transcript; add/remove person works + persists per convo; dropdown shows only unattached contacts; speaker turns render |
-| **P5** | **Pixel QA + stub wiring + tests** | Wire all no-op handlers (Log note, Ask AI, +Note, Generate, …) to named stubs; DevTools side-by-side diff pass; Vitest for the 8 interactions ([§1](#1-fidelity-bar)); decide fixed-width vs responsive ([§12](#12-open-questions)) | Visual diff negligible at 1280–1440px; all 8 interaction tests green; every backend call goes through `BackendClient`; no dead handlers |
+| **P4** | **Notetaker tab (full slice)** | `ConversationSidebar` (waveform rows), `ConversationDetail` header, `PeopleRow` (display-only chips), `SegmentedControl`, `SummaryPanel`, `TranscriptPanel` | Side-by-side = indistinguishable; segmented toggles summary/transcript; People row shows the conversation's people; switching conversations updates detail + people; speaker turns render |
+| **P5** | **Pixel QA + stub wiring + tests** | Wire all no-op handlers (Log note, Ask AI, +Note, Generate, …) to named stubs; DevTools side-by-side diff pass; Vitest for the 4 interactions ([§1](#1-fidelity-bar)); decide fixed-width vs responsive ([§12](#12-open-questions)) | Visual diff negligible at 1280–1440px; all 4 interaction tests green; every backend call goes through `BackendClient`; no dead handlers |
 | **P6** *(later, not now)* | **Swap stub → urql** | `createUrqlBackend` implementing `BackendClient` against [DESIGN §7](./DESIGN.md#7-graphql-api); resolve [§6](#6-ui--backend-schema-reconciliation) flags with backend | App runs on real data with **no component changes**; mockup-only fields handled per agreed schema |
 
 ---
@@ -336,7 +323,7 @@ Vertical slices — each tab is built **end-to-end and verified against the mock
 
 ## 12. Open questions
 
-1. **People-on-a-conversation vs one-contact-per-convo** — the mockup's multi-attach UI conflicts with [DESIGN assumption #3](./DESIGN.md#3-assumptions). Extend schema (many-to-many) or reframe? *(Blocks only P6, not the UI.)*
+1. ~~People-on-a-conversation vs one-contact-per-convo~~ **Resolved:** People add/remove is out of scope, so the row is display-only (one contact per conversation) and already matches [DESIGN assumption #3](./DESIGN.md#3-assumptions). No schema change.
 2. **Mockup-only fields** ([§6](#6-ui--backend-schema-reconciliation)): `tags`, `met`, `phone`, `deal`, conversation `title/duration/channel/keyPoints`, transcript `time` — add to the schema, derive, or keep UI-only?
 3. **Responsive?** The mockup is a fixed `100vh` desktop layout (308px / 360px / 780px fixed). Keep fixed for an exact clone, or add breakpoints? Recommend **fixed now**, responsive as a later pass.
 4. **`lastTouch`** — seed a string, or compute from the latest note/conversation date once data is real?

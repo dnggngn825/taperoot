@@ -6,7 +6,6 @@ import type { GenerateRequest } from '../extraction-client.js';
 
 const extractionClient = createExtractionClient();
 
-// ── addNote ──────────────────────────────────────────────────────────────────
 
 builder.mutationField('addNote', (t) =>
   t.prismaField({
@@ -14,7 +13,7 @@ builder.mutationField('addNote', (t) =>
     args: {
       contactId: t.arg.id({ required: true }),
       body: t.arg.string({ required: true }),
-      noteDate: t.arg.string({ required: true }), // ISO date
+      noteDate: t.arg.string({ required: true }),
     },
     resolve: async (query, _root, args) => {
       const note = await prisma.note.create({
@@ -27,7 +26,6 @@ builder.mutationField('addNote', (t) =>
         },
       });
 
-      // Auto-trigger generation on notes-only contacts (no conversations)
       const convoCount = await prisma.conversation.count({ where: { contactId: String(args.contactId) } });
       if (convoCount === 0) {
         void triggerGeneration(String(args.contactId), 'notes-only');
@@ -38,7 +36,6 @@ builder.mutationField('addNote', (t) =>
   }),
 );
 
-// ── updateNote ───────────────────────────────────────────────────────────────
 
 builder.mutationField('updateNote', (t) =>
   t.prismaField({
@@ -61,7 +58,6 @@ builder.mutationField('updateNote', (t) =>
   }),
 );
 
-// ── updateFollowup ───────────────────────────────────────────────────────────
 
 builder.mutationField('updateFollowup', (t) =>
   t.prismaField({
@@ -84,7 +80,6 @@ builder.mutationField('updateFollowup', (t) =>
   }),
 );
 
-// ── addConversation ───────────────────────────────────────────────────────────
 
 builder.mutationField('addConversation', (t) =>
   t.prismaField({
@@ -126,12 +121,10 @@ builder.mutationField('generateForContact', (t) =>
         include: { notes: true, conversations: true },
       });
 
-      // Eligibility guard
       if (contact.notes.length === 0 && contact.conversations.length === 0) {
         return contact;
       }
 
-      // Set processing and fire background job
       const updated = await prisma.contact.update({
         ...query,
         where: { id },
@@ -154,7 +147,6 @@ async function triggerGeneration(contactId: string, mode: 'convo' | 'notes-only'
       include: { notes: { orderBy: { noteDate: 'desc' } }, conversations: true },
     });
 
-    // Build context for gRPC call
     const req: GenerateRequest = {
       contact_id: contactId,
       context: {
@@ -162,7 +154,6 @@ async function triggerGeneration(contactId: string, mode: 'convo' | 'notes-only'
         company: contact.company ?? '',
         role: contact.role ?? '',
         notes: mode === 'notes-only'
-          // Latest note only for notes-only path
           ? contact.notes.slice(0, 1).map((n) => ({
               id: n.id,
               body: n.body,
@@ -184,12 +175,9 @@ async function triggerGeneration(contactId: string, mode: 'convo' | 'notes-only'
 
     const result = await extractionClient.generate(req);
 
-    // Idempotent persist:
-    // 1. Delete ai-origin notes + open ai-origin followups
     await prisma.note.deleteMany({ where: { contactId, origin: 'ai' } });
     await prisma.followup.deleteMany({ where: { contactId, origin: 'ai', status: 'open' } });
 
-    // 2. Insert fresh AI notes (only on convo path)
     if (mode === 'convo' && result.notes.length > 0) {
       await prisma.note.createMany({
         data: result.notes.map((n) => ({
@@ -202,7 +190,6 @@ async function triggerGeneration(contactId: string, mode: 'convo' | 'notes-only'
       });
     }
 
-    // 3. Insert fresh AI followups
     if (result.actions.length > 0) {
       await prisma.followup.createMany({
         data: result.actions.map((a) => ({

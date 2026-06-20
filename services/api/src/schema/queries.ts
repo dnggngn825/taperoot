@@ -2,7 +2,6 @@ import { builder } from './builder.js';
 import { prisma } from '../db.js';
 import { ContactSortEnum } from './types.js';
 
-// Hardcoded single owner — auth is out of scope
 async function getOwnerId(): Promise<string> {
   const user = await prisma.user.findFirst();
   if (!user) throw new Error('No owner user found — run seed first');
@@ -20,7 +19,6 @@ builder.queryFields((t) => ({
       const ownerId = await getOwnerId();
       const q = args.q?.trim();
 
-      // Build keyword filter
       const where = q
         ? {
             userId: ownerId,
@@ -43,7 +41,6 @@ builder.queryFields((t) => ({
         },
       });
 
-      // Compute lastActivityAt for sorting
       const withActivity = contacts.map((c) => {
         const dates = [
           ...c.notes.map((n) => n.noteDate),
@@ -59,7 +56,6 @@ builder.queryFields((t) => ({
       if (args.sort === 'alphabetical') {
         withActivity.sort((a, b) => a.name.localeCompare(b.name));
       } else {
-        // recent_update: nulls last
         withActivity.sort((a, b) => {
           if (!a._lastActivityAt && !b._lastActivityAt) return 0;
           if (!a._lastActivityAt) return 1;

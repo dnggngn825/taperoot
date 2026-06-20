@@ -5,10 +5,8 @@ import type {
   ExtractedNote,
   ExtractionResult,
   Extractor,
-  NoteCtx,
 } from '../types.js';
 
-// Action-verb heuristic — phrases that strongly suggest a follow-up action
 const ACTION_VERBS = [
   "i'll", "i will", "i'll", "we'll", "we will",
   "will send", "will share", "will follow", "will connect",
@@ -18,7 +16,6 @@ const ACTION_VERBS = [
   "should send", "should connect", "should follow",
 ];
 
-// Relative-date phrases → offset in days
 const RELATIVE_DATES: [RegExp, number][] = [
   [/\btoday\b/i, 0],
   [/\btomorrow\b/i, 1],
@@ -50,7 +47,6 @@ function extractActionsFromText(
   anchor: Date,
 ): ExtractedAction[] {
   const actions: ExtractedAction[] = [];
-  // Split into sentences (period/exclamation/newline)
   const sentences = text.split(/[.!\n]+/).map(s => s.trim()).filter(Boolean);
   for (const sentence of sentences) {
     const lower = sentence.toLowerCase();
@@ -74,7 +70,6 @@ function noteTextFromConvo(convo: ConversationCtx): string {
   if (convo.summary && convo.summary.trim()) {
     return firstNWords(convo.summary, 20);
   }
-  // Fall back to first non-empty line of transcript
   try {
     const turns = JSON.parse(convo.transcript) as { speaker: string; text: string }[];
     const first = turns.find(t => t.text?.trim());
@@ -99,7 +94,6 @@ export class MockExtractor implements Extractor {
     const notes: ExtractedNote[] = [];
     const actions: ExtractedAction[] = [];
 
-    // One note per conversation (dated to convo_date)
     for (const convo of context.conversations) {
       const anchor = new Date(convo.convo_date);
       notes.push({
@@ -107,18 +101,14 @@ export class MockExtractor implements Extractor {
         text: noteTextFromConvo(convo),
         date: convo.convo_date,
       });
-      // Extract actions from the full conversation text
-      const text = fullConvoText(convo);
-      actions.push(...extractActionsFromText(text, 'conversation', convo.id, anchor));
+      actions.push(...extractActionsFromText(fullConvoText(convo), 'conversation', convo.id, anchor));
     }
 
-    // Extract actions from notes (no new note entries)
     for (const note of context.notes) {
       const anchor = new Date(note.note_date);
       actions.push(...extractActionsFromText(note.body, 'note', note.id, anchor));
     }
 
-    // Fallback: if we found nothing at all, emit one generic action per source
     if (actions.length === 0) {
       for (const convo of context.conversations) {
         actions.push({

@@ -7,7 +7,7 @@
 | **Executes** | [FRONTEND-UI-PLAN.md](./FRONTEND-UI-PLAN.md) |
 | **Source of truth (pixels + data)** | `doc/Taperoot Portal Frontend Design.html` (mockup template + `DCLogic`) |
 | **Stack** | Vite + React 18 + TypeScript (existing `web/` workspace) |
-| **Out of scope** | Real persistence / AI generate / auth (parallel backend) — rendered as no-op stubs |
+| **Out of scope** | Real persistence / AI generate / auth (parallel backend); **People add/remove on a conversation** (the People row is **display-only**) — rendered as no-op stubs |
 
 ---
 
@@ -171,7 +171,7 @@ export const CHIP_CLASS: Record<ChipTone, string> = { coral:'coral', ink:'ink', 
 > **Why `toneForContact(id)` not `toneFor(index)`:** the mockup colours avatars by the contact's index in the full list. If we used the rendered-row index, filtering the list would shift colours. Keying on the stable seed order fixes that. This is the one place the plan's "derive by index" needs care.
 
 ### 3.6 `data/backend.ts` — plan §5, verbatim
-Copy the `BackendClient` interface ([§5.1](./FRONTEND-UI-PLAN.md#51-one-seam-backendclient)) and `createInMemoryBackend()` ([§5.2](./FRONTEND-UI-PLAN.md#52-todays-implementation-in-memory-stub)). Keep the `// TODO(backend): <urql op> — DESIGN §n` markers — they are the swap checklist. Add `getConversation(id)` if a detail fetch is wanted; otherwise the store holds the loaded list and selects by id.
+Copy the `BackendClient` interface ([§5.1](./FRONTEND-UI-PLAN.md#51-one-seam-backendclient)) and `createInMemoryBackend()` ([§5.2](./FRONTEND-UI-PLAN.md#52-todays-implementation-in-memory-stub)). Keep the `// TODO(backend): <urql op> — DESIGN §n` markers — they are the swap checklist. Add `getConversation(id)` if a detail fetch is wanted; otherwise the store holds the loaded list and selects by id. **Omit `attachPerson`/`detachPerson`** — People add/remove is out of scope, so the People row is display-only.
 
 ### 3.7 `data/seed.ts` — ported from the mockup `DCLogic`
 
@@ -253,8 +253,9 @@ export const seedConversations: Conversation[] = [
 /** Stable contact order — drives avatar tone (see derive.ts). */
 export const CONTACT_ORDER = seedContacts.map(c => c.id)
 
-/** Initial conversation→contact attachments (mockup people {0:[0],1:[1],2:[2],3:[4],4:[5]}). */
-export const INITIAL_PEOPLE: Record<string, string[]> = {
+/** Conversation→contact(s) shown in the People row — display-only (add/remove out of scope).
+ *  One contact per conversation, which maps cleanly to the backend's one-contact-per-conversation model. */
+export const PEOPLE_BY_CONVERSATION: Record<string, string[]> = {
   'cnv-vertex':   ['cnt-grant'],
   'cnv-lumen':    ['cnt-maya'],
   'cnv-northwind':['cnt-daniel'],
@@ -268,7 +269,7 @@ export const INITIAL_PEOPLE: Record<string, string[]> = {
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useState, type ReactNode } from 'react'
 import type { Contact, Conversation } from '../data/types'
 import { createInMemoryBackend, type BackendClient } from '../data/backend'
-import { CONTACT_ORDER, INITIAL_PEOPLE, seedConversations } from '../data/seed'
+import { CONTACT_ORDER, PEOPLE_BY_CONVERSATION, seedConversations } from '../data/seed'
 
 type Tab = 'contacts' | 'notetaker'
 type NoteTab = 'summary' | 'transcript'
@@ -278,8 +279,6 @@ interface UIState {
   selectedContactId: string
   selectedConversationId: string
   noteTab: NoteTab
-  peopleByConversation: Record<string, string[]>
-  addPersonOpen: boolean
 }
 
 type Action =
@@ -287,35 +286,20 @@ type Action =
   | { type:'SELECT_CONTACT'; id: string }
   | { type:'SELECT_CONVERSATION'; id: string }
   | { type:'SET_NOTE_TAB'; tab: NoteTab }
-  | { type:'TOGGLE_ADD' }
-  | { type:'ATTACH_PERSON'; conversationId: string; contactId: string }
-  | { type:'DETACH_PERSON'; conversationId: string; contactId: string }
 
 const INITIAL_UI: UIState = {
   tab: 'contacts',
   selectedContactId: CONTACT_ORDER[0],
   selectedConversationId: seedConversations[0].id,
   noteTab: 'summary',
-  peopleByConversation: INITIAL_PEOPLE,
-  addPersonOpen: false,
 }
 
 function reducer(s: UIState, a: Action): UIState {
   switch (a.type) {
     case 'SET_TAB': return { ...s, tab: a.tab }
     case 'SELECT_CONTACT': return { ...s, selectedContactId: a.id }
-    case 'SELECT_CONVERSATION': return { ...s, selectedConversationId: a.id, addPersonOpen: false }
+    case 'SELECT_CONVERSATION': return { ...s, selectedConversationId: a.id }
     case 'SET_NOTE_TAB': return { ...s, noteTab: a.tab }
-    case 'TOGGLE_ADD': return { ...s, addPersonOpen: !s.addPersonOpen }
-    case 'ATTACH_PERSON': {
-      const cur = s.peopleByConversation[a.conversationId] ?? []
-      const next = cur.includes(a.contactId) ? cur : [...cur, a.contactId]
-      return { ...s, addPersonOpen: false, peopleByConversation: { ...s.peopleByConversation, [a.conversationId]: next } }
-    }
-    case 'DETACH_PERSON': {
-      const cur = s.peopleByConversation[a.conversationId] ?? []
-      return { ...s, peopleByConversation: { ...s.peopleByConversation, [a.conversationId]: cur.filter(id => id !== a.contactId) } }
-    }
     default: return s
   }
 }
@@ -365,13 +349,8 @@ export function useSelectedConversation() {
 }
 export function useCurrentPeople(): Contact[] {
   const { contacts, ui } = useApp()
-  const ids = ui.peopleByConversation[ui.selectedConversationId] ?? []
+  const ids = PEOPLE_BY_CONVERSATION[ui.selectedConversationId] ?? []
   return ids.map(id => contacts.find(c => c.id === id)).filter(Boolean) as Contact[]
-}
-export function useAvailableContacts(): Contact[] {
-  const { contacts, ui } = useApp()
-  const ids = new Set(ui.peopleByConversation[ui.selectedConversationId] ?? [])
-  return contacts.filter(c => !ids.has(c.id))
 }
 ```
 
@@ -483,31 +462,18 @@ Layout mirrors Contacts: `<ConversationSidebar 308px>` + `<ConversationDetail fl
 | `NotetakerView` | — | sidebar + detail |
 | `ConversationSidebar` | `conversations`, `ui.selectedConversationId`, `dispatch` | "Conversations" label + `.scroll-area` rows (waveform icon, title 14/600, date·duration 12) |
 | `ConversationDetail` | `useSelectedConversation()`, `ui.noteTab` | header (waveform 52/r14, title 25 serif, date·duration·channel, **Ask AI**/**Share**), `PeopleRow`, `SegmentedControl`, then `SummaryPanel` or `TranscriptPanel` |
-| `PeopleRow` | `useCurrentPeople()`, `useAvailableContacts()`, `ui.addPersonOpen`, `dispatch` | "People" label + person chips (Avatar chip + name + `×`) + dashed **+ Add person** button + dropdown |
+| `PeopleRow` | `useCurrentPeople()` | **Display-only.** "People" label + person chips (Avatar chip + name). No `×`, no **+ Add person** button/dropdown (out of scope). |
 | `SummaryPanel` | `conversation.summary`, `.keyPoints` | summary card (diamond + "AI summary" label + paragraph) + "Key points" coral-dot bullets |
 | `TranscriptPanel` | `conversation.transcript` | per line: `Avatar speaker` (tone `SPEAKER_TONES[line.speaker]`, initials `S1/S2`), speaker label 14/700, time 12, text |
 
-**`PeopleRow` (the most complex interaction) — skeleton:**
+**`PeopleRow` — display-only skeleton:**
 ```tsx
-import { useApp, useAvailableContacts, useCurrentPeople } from '../../store/store'
+import { useCurrentPeople } from '../../store/store'
 import { Avatar } from '../../ui/Avatar'
 import { initials, toneForContact } from '../../data/derive'
 
 export function PeopleRow() {
-  const { ui, dispatch, backend } = useApp()
   const people = useCurrentPeople()
-  const available = useAvailableContacts()
-  const convId = ui.selectedConversationId
-
-  const add = (contactId: string) => {
-    dispatch({ type:'ATTACH_PERSON', conversationId: convId, contactId })
-    void backend.attachPerson(convId, contactId)        // stub no-op today
-  }
-  const remove = (contactId: string) => {
-    dispatch({ type:'DETACH_PERSON', conversationId: convId, contactId })
-    void backend.detachPerson(convId, contactId)
-  }
-
   return (
     <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
       {/* "People" label … */}
@@ -515,28 +481,16 @@ export function PeopleRow() {
         <span key={p.id} /* chip styles */>
           <Avatar preset="chip" tone={toneForContact(p.id)} initials={initials(p.name)} />
           <span>{p.name}</span>
-          <button onClick={() => remove(p.id)}>×</button>
         </span>
       ))}
-      <div style={{ position:'relative' }}>
-        <button onClick={() => dispatch({ type:'TOGGLE_ADD' })} /* dashed pill */>+ Add person</button>
-        {ui.addPersonOpen && (
-          <div /* dropdown: absolute, shadow-pop, list of available */>
-            {available.map(a => (
-              <div key={a.id} onClick={() => add(a.id)} /* row */>
-                <Avatar preset="add" tone={toneForContact(a.id)} initials={initials(a.name)} />
-                <div>{a.name}<div>{a.role}</div></div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   )
 }
 ```
+> Add/remove (`+ Add person` dropdown, `×`) is **out of scope** — omitted, not stubbed.
 
 **Fidelity notes**
+- **People add/remove is out of scope.** The mockup has a `+ Add person` dropdown and a `×` on each chip — intentionally omitted. The People row displays the conversation's people statically.
 - Tab/panel show-hide: the mockup toggles `display:none`; we render conditionally (same visual result). Keep both tabs mounted only if you need to match scroll-position retention — not required.
 - Waveform icons: copy the mockup's small `<div>` bars (widths/heights/colours) exactly; coral `var(--coral)` in the convo header, `var(--coral-deep)` in the list rows.
 
@@ -572,12 +526,12 @@ Each phase ends green before the next ([plan §10](./FRONTEND-UI-PLAN.md#10-impl
 ### P4 — Notetaker tab (full slice)
 1. `ui/SegmentedControl`.
 2. `ConversationSidebar` → rows; wire `SELECT_CONVERSATION`.
-3. `ConversationDetail` header; `PeopleRow` (attach/detach + dropdown); `SummaryPanel`; `TranscriptPanel`.
-4. **Exit:** indistinguishable; segmented toggles summary/transcript; add/remove person works and persists per conversation when switching; dropdown lists only unattached; 3-speaker-free transcript renders (mockup is 2-speaker).
+3. `ConversationDetail` header; `PeopleRow` (display-only chips); `SummaryPanel`; `TranscriptPanel`.
+4. **Exit:** indistinguishable; segmented toggles summary/transcript; People row shows the conversation's people; switching conversations updates detail + people; transcript renders.
 
 ### P5 — Pixel QA + stub wiring + tests
 1. Route every no-op button to a named handler; confirm no dead `onClick`/`href`.
-2. `store/store.test.tsx` — the 8 interactions (§8).
+2. `store/store.test.tsx` — the 4 in-scope interactions (§8).
 3. DevTools side-by-side diff at 1280 & 1440; token audit (`grep` for stray hex/px).
 4. **Exit:** visual diff negligible; 8 tests green; every server call goes through `BackendClient`.
 
@@ -585,7 +539,7 @@ Each phase ends green before the next ([plan §10](./FRONTEND-UI-PLAN.md#10-impl
 
 ## 8. Tests (`store/store.test.tsx`)
 
-Cover the 8 interactions from [plan §1](./FRONTEND-UI-PLAN.md#1-fidelity-bar). Reducer-level (pure, fast) for 1–8; one RTL render test for the dropdown.
+Cover the 4 in-scope interactions from [plan §1](./FRONTEND-UI-PLAN.md#1-fidelity-bar) (tab switch, select contact, select conversation, note-tab toggle). Reducer-level — pure and fast.
 
 ```ts
 import { describe, it, expect } from 'vitest'
@@ -594,29 +548,8 @@ import { describe, it, expect } from 'vitest'
 describe('UI reducer', () => {
   it('switches tab', () => expect(reducer(INITIAL_UI, {type:'SET_TAB',tab:'notetaker'}).tab).toBe('notetaker'))
   it('selects contact', () => expect(reducer(INITIAL_UI, {type:'SELECT_CONTACT',id:'cnt-maya'}).selectedContactId).toBe('cnt-maya'))
-  it('selecting a conversation closes the add dropdown', () => {
-    const open = { ...INITIAL_UI, addPersonOpen:true }
-    expect(reducer(open, {type:'SELECT_CONVERSATION',id:'cnv-lumen'}).addPersonOpen).toBe(false)
-  })
+  it('selects conversation', () => expect(reducer(INITIAL_UI, {type:'SELECT_CONVERSATION',id:'cnv-lumen'}).selectedConversationId).toBe('cnv-lumen'))
   it('toggles note tab', () => expect(reducer(INITIAL_UI, {type:'SET_NOTE_TAB',tab:'transcript'}).noteTab).toBe('transcript'))
-  it('attach adds + closes dropdown', () => {
-    const s = reducer(INITIAL_UI, {type:'ATTACH_PERSON',conversationId:'cnv-vertex',contactId:'cnt-maya'})
-    expect(s.peopleByConversation['cnv-vertex']).toContain('cnt-maya'); expect(s.addPersonOpen).toBe(false)
-  })
-  it('attach is idempotent', () => {
-    const s = reducer(INITIAL_UI, {type:'ATTACH_PERSON',conversationId:'cnv-vertex',contactId:'cnt-grant'})
-    expect(s.peopleByConversation['cnv-vertex']).toEqual(['cnt-grant'])  // already present, no dupe
-  })
-  it('detach removes', () => {
-    const s = reducer(INITIAL_UI, {type:'DETACH_PERSON',conversationId:'cnv-vertex',contactId:'cnt-grant'})
-    expect(s.peopleByConversation['cnv-vertex']).toEqual([])
-  })
-  it('people persist per conversation', () => {
-    let s = reducer(INITIAL_UI, {type:'ATTACH_PERSON',conversationId:'cnv-vertex',contactId:'cnt-maya'})
-    s = reducer(s, {type:'SELECT_CONVERSATION',id:'cnv-lumen'})
-    s = reducer(s, {type:'SELECT_CONVERSATION',id:'cnv-vertex'})
-    expect(s.peopleByConversation['cnv-vertex']).toEqual(['cnt-grant','cnt-maya'])
-  })
 })
 ```
 > Export `reducer` and `INITIAL_UI` from `store.tsx` for these (or move them to `store/reducer.ts`).
@@ -635,11 +568,11 @@ describe('UI reducer', () => {
 ## 10. Definition of done
 
 - [ ] Both tabs visually indistinguishable from the mockup at 1280–1440px.
-- [ ] All 8 interactions work; 8 reducer tests green.
+- [ ] All 4 in-scope interactions work; reducer tests green.
 - [ ] Every read/mutation goes through `BackendClient`; components never import `seed.ts` (except `derive`/`store` for ids/defaults).
-- [ ] All mockup buttons present; none dead — each calls a named handler or stub.
+- [ ] Every rendered button calls a named handler or stub; none dead. (People add/remove buttons are omitted, not stubbed.)
 - [ ] Mockup-only fields render from seed; `// TODO(backend)` markers in place for the urql swap (P6).
 - [ ] No raw hex/px that should be a token.
 
 ## 11. Carry-over for the backend swap (P6, later)
-The [open questions in plan §12](./FRONTEND-UI-PLAN.md#12-open-questions) — esp. **people-on-a-conversation vs one-contact-per-convo** and the **mockup-only fields** — must be resolved with the backend team before `createUrqlBackend` replaces the stub. Until then the UI is fully functional on seed data.
+With People add/remove out of scope, the **people-on-a-conversation conflict ([plan §12](./FRONTEND-UI-PLAN.md#12-open-questions) #1) is moot** — the row shows one contact per conversation, which already matches the backend's one-contact-per-conversation model. The remaining carry-over is the **mockup-only fields** (plan §12 #2) — resolve with the backend team before `createUrqlBackend` replaces the stub. Until then the UI is fully functional on seed data.

@@ -1,8 +1,6 @@
 import { builder } from './builder.js';
 import { prisma } from '../db.js';
 
-// ── Enums ────────────────────────────────────────────────────────────────────
-
 export const AiStatusEnum = builder.enumType('AiStatus', {
   values: ['idle', 'processing', 'done', 'failed'] as const,
 });
@@ -26,8 +24,6 @@ export const OriginEnum = builder.enumType('Origin', {
 export const ContactSortEnum = builder.enumType('ContactSort', {
   values: ['recent_update', 'alphabetical'] as const,
 });
-
-// ── Pothos Prisma types ───────────────────────────────────────────────────────
 
 builder.prismaObject('Note', {
   fields: (t) => ({

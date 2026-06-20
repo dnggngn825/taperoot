@@ -1,7 +1,3 @@
-// Plain-text transcript parser
-// Input: "Speaker 1: hello\nSpeaker 2: hi there"
-// Output: [{ speaker: "Speaker 1", text: "hello" }, ...]
-
 export interface TranscriptTurn {
   speaker: string;
   text: string;
@@ -13,7 +9,6 @@ export function parseRawTranscript(raw: string): { turns: TranscriptTurn[]; spea
   const speakers = new Set<string>();
 
   for (const line of lines) {
-    // Match "Speaker N: text" or "Name: text"
     const match = line.match(/^([^:]+?):\s*(.+)$/);
     if (match) {
       const speaker = match[1].trim();
@@ -23,7 +18,6 @@ export function parseRawTranscript(raw: string): { turns: TranscriptTurn[]; spea
     }
   }
 
-  // If no structured lines found, treat whole text as one turn
   if (turns.length === 0 && raw.trim()) {
     turns.push({ speaker: 'Speaker 1', text: raw.trim() });
     speakers.add('Speaker 1');
