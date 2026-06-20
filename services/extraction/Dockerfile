@@ -6,6 +6,7 @@ COPY services/extraction/package.json ./services/extraction/
 COPY web/package.json ./web/
 RUN npm install
 COPY tsconfig.json ./
+COPY proto ./proto
 COPY services/extraction ./services/extraction
 EXPOSE 50051
 CMD ["npx", "tsx", "services/extraction/src/index.ts"]
