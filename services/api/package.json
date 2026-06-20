@@ -2,9 +2,10 @@
   "name": "@taperoot/api",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "start": "tsx src/index.ts",
+    "dev": "tsx watch --env-file=../../.env src/index.ts",
+    "start": "tsx --env-file=../../.env src/index.ts",
     "typecheck": "tsc --noEmit",
     "migrate:dev": "prisma migrate dev --env-file ../../.env",
     "migrate:deploy": "prisma migrate deploy --env-file ../../.env",
@@ -14,7 +15,12 @@
     "seed": "tsx --env-file=../../.env prisma/seed.ts"
   },
   "dependencies": {
+    "@pothos/core": "^4.13.0",
+    "@pothos/plugin-prisma": "^4.14.3",
     "@prisma/client": "^5.22.0",
-    "prisma": "^5.22.0"
+    "graphql": "^16.14.2",
+    "graphql-yoga": "^5.21.2",
+    "prisma": "^5.22.0",
+    "prisma-pothos-types": "^1.0.0"
   }
 }

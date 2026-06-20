@@ -48,14 +48,14 @@
 
 ## Phase 5 — GraphQL API: read side
 
-- [ ] Server boots; GraphiQL reachable at `:4000/graphql`
-- [ ] `contacts` (no args) returns all 6 sorted by `lastActivityAt` desc
-- [ ] `contacts(sort: alphabetical)` returns contacts A→Z by name
-- [ ] `contacts(q:"<term>")` filters correctly; sort still applies
-- [ ] Contact F (no activity) appears last under `recent_update` (nulls last)
-- [ ] `contact(id)` returns nested notes + convos + followups in one query
-- [ ] `openFollowupCount = 0` for all (none generated yet)
-- [ ] Nested query does not N+1 (plugin batching — eyeball query log)
+- [x] Server boots; GraphiQL reachable at `:4000/graphql`
+- [x] `contacts` (no args) returns all 6 sorted by `lastActivityAt` desc
+- [x] `contacts(sort: alphabetical)` returns contacts A→Z by name
+- [x] `contacts(q:"<term>")` filters correctly; sort still applies
+- [x] Contact F (no activity) appears last under `recent_update` (nulls last)
+- [x] `contact(id)` returns nested notes + convos + followups in one query
+- [x] `openFollowupCount = 0` for all (none generated yet)
+- [x] Nested query does not N+1 (plugin batching — eyeball query log)
 
 ---
 
