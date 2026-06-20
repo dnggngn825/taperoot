@@ -36,7 +36,7 @@ export interface ContactSummary {
   aiStatus: AiStatus;
   openFollowupCount: number;
   lastActivityAt: string | null;
-  conversations: { id: string }[];
+  conversations: { id: string; summary: string | null; convoDate: string; speakerCount: number }[];
 }
 
 export interface ContactDetail extends ContactSummary {
