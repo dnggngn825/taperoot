@@ -6,7 +6,7 @@ import type {
   ExtractionResult,
   Extractor,
   NoteCtx,
-} from './types.js';
+} from '../types.js';
 
 // Action-verb heuristic — phrases that strongly suggest a follow-up action
 const ACTION_VERBS = [
