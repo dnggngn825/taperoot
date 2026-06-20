@@ -1,0 +1,50 @@
+syntax = "proto3";
+package extraction.v1;
+
+service ExtractionService {
+  rpc GenerateForContact(GenerateForContactRequest) returns (GenerateForContactResponse);
+}
+
+message GenerateForContactRequest {
+  string contact_id = 1;
+  ContactContext context = 2;
+}
+
+message ContactContext {
+  string name    = 1;
+  string company = 2;
+  string role    = 3;
+  repeated NoteCtx         notes         = 4;
+  repeated ConversationCtx conversations = 5;
+}
+
+message NoteCtx {
+  string id        = 1;
+  string body      = 2;
+  string note_date = 3; // ISO date string
+}
+
+message ConversationCtx {
+  string id         = 1;
+  string convo_date = 2; // ISO date string
+  string summary    = 3; // empty string if null
+  string transcript = 4; // JSON string [{ speaker, text }]
+}
+
+message GenerateForContactResponse {
+  repeated ExtractedNote   notes   = 1; // one per conversation; empty if no convos
+  repeated ExtractedAction actions = 2;
+}
+
+message ExtractedNote {
+  string convo_id = 1;
+  string text     = 2;
+  string date     = 3; // ISO date matching convo_date
+}
+
+message ExtractedAction {
+  string description = 1;
+  string due_date    = 2; // ISO date string, empty if none
+  string source_type = 3; // "note" | "conversation"
+  string source_id   = 4;
+}
