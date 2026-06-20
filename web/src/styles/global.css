@@ -1,0 +1,6 @@
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body { background: var(--paper); color: var(--ink); font-family: var(--font-sans); }
+.scroll-area { overflow: auto; }
+.scroll-area::-webkit-scrollbar { width: 8px; height: 8px; }
+.scroll-area::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 8px; }

@@ -1,0 +1,53 @@
+:root {
+  --paper: #FAF6EE;
+  --panel: #F1ECE1;
+  --panel-track: #E9E2D5;
+  --card: #FFFFFF;
+
+  --ink: #1B1714;
+  --ink-soft: #22201C;
+  --ink-invert: #F4EFE6;
+  --text-2: #3A352E;
+  --text-3: #6E665C;
+  --muted: #9B9284;
+  --muted-2: #A39A8C;
+  --muted-3: #8A8378;
+
+  --coral: #F7654E;
+  --coral-deep: #C24A33;
+
+  --tag-coral-bg: #FBE0D8;
+  --tag-coral-fg: #C24A33;
+  --tag-ink-bg: #22201C;
+  --tag-ink-fg: #F4EFE6;
+  --tag-soft-bg: #ECE5D9;
+  --tag-soft-fg: #6E665C;
+
+  --border: #E1D9CA;
+  --border-2: #E8E1D4;
+  --border-card: #ECE5D9;
+  --border-card-2: #E6DFD2;
+  --border-line: #E4DDCF;
+  --border-btn: #DCD4C5;
+  --border-dashed: #C9C0B0;
+  --scroll-thumb: #D6CDBC;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-nav: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-pop: 0 10px 30px rgba(0, 0, 0, 0.15);
+
+  --font-sans: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+
+  --r-pill: 999px;
+  --r-card: 14px;
+  --r-card-lg: 16px;
+  --r-row: 12px;
+  --r-logo: 6px;
+  --r-convo-icon: 10px;
+
+  --h-header: 64px;
+  --w-sidebar: 308px;
+  --w-followups: 360px;
+  --max-readcol: 780px;
+}

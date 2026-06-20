@@ -77,10 +77,10 @@
 
 ## Phase 7 — Web: contacts list
 
-- [ ] `npm run dev:web` serves; page lists 6 contacts sorted by recent update by default
-- [ ] Toggling sort to alphabetical re-orders the list A→Z
-- [ ] Open-followup count renders per card
-- [ ] Empty + loading states handled
+- [x] `npm run dev:web` serves; page lists 6 contacts sorted by recent update by default
+- [x] Toggling sort to alphabetical re-orders the list A→Z
+- [x] Open-followup count renders per card
+- [x] Empty + loading states handled
 
 ---
 
