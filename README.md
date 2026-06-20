@@ -4,6 +4,8 @@
 
 A Blinq tap *starts* a relationship. But what happens next — who they were, what you talked about, what you said you'd do — usually lives in your head and gets forgotten. Blinq wins when its users actually follow up. Taperoot makes that effortless: it turns what Blinq already captures into a clear list of next steps for each contact.
 
+![Taperoot contact detail — notes, AI-generated follow-ups, and the Generate button](doc/screenshot.png)
+
 This README is about *how I thought about the product*, not a list of features.
 
 ---
