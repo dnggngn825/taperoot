@@ -2,10 +2,18 @@ import { builder } from './builder.js';
 import { prisma } from '../db.js';
 import { ContactSortEnum } from './types.js';
 
+let cachedOwnerId: string | null = null;
+
 async function getOwnerId(): Promise<string> {
+  if (cachedOwnerId) return cachedOwnerId;
   const user = await prisma.user.findFirst();
   if (!user) throw new Error('No owner user found — run seed first');
-  return user.id;
+  cachedOwnerId = user.id;
+  return cachedOwnerId;
+}
+
+export async function initOwner(): Promise<void> {
+  cachedOwnerId = await getOwnerId();
 }
 
 builder.queryFields((t) => ({

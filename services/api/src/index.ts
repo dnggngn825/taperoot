@@ -1,6 +1,8 @@
 import http from 'node:http';
 import { createYoga } from 'graphql-yoga';
 import { buildSchema } from './schema/index.js';
+import { initOwner } from './schema/queries.js';
+import { logger } from './lib/logger.js';
 
 const port = Number(process.env.API_PORT ?? 4000);
 const schema = buildSchema();
@@ -24,7 +26,14 @@ const yoga = createYoga({
 
 const server = http.createServer(yoga);
 
-server.listen(port, () => {
-  console.log(`[api] GraphQL server listening on :${port}`);
-  console.log(`[api] GraphiQL → http://localhost:${port}/graphql`);
-});
+initOwner()
+  .then(() => {
+    server.listen(port, () => {
+      logger.info('GraphQL server listening', { port });
+      logger.info(`GraphiQL → http://localhost:${port}/graphql`);
+    });
+  })
+  .catch((err: unknown) => {
+    logger.error('Failed to initialise owner — is the DB seeded?', { err: String(err) });
+    process.exit(1);
+  });

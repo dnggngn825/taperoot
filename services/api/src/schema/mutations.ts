@@ -2,9 +2,20 @@ import { builder } from './builder.js';
 import { prisma } from '../db.js';
 import { parseRawTranscript } from '../lib/transcript.js';
 import { createExtractionClient } from '../extraction-client.js';
+import { logger } from '../lib/logger.js';
 import type { GenerateRequest } from '../extraction-client.js';
 
-const extractionClient = createExtractionClient();
+let _extractionClient: ReturnType<typeof createExtractionClient> | null = null;
+function getExtractionClient() {
+  if (!_extractionClient) _extractionClient = createExtractionClient();
+  return _extractionClient;
+}
+
+function parseDate(value: string, field: string): Date {
+  const d = new Date(value);
+  if (isNaN(d.getTime())) throw new Error(`Invalid date for ${field}: ${value}`);
+  return d;
+}
 
 
 builder.mutationField('addNote', (t) =>
@@ -16,18 +27,22 @@ builder.mutationField('addNote', (t) =>
       noteDate: t.arg.string({ required: true }),
     },
     resolve: async (query, _root, args) => {
-      const note = await prisma.note.create({
-        ...query,
-        data: {
-          contactId: String(args.contactId),
-          body: args.body,
-          noteDate: new Date(args.noteDate),
-          origin: 'manual',
-        },
+      const { note, convoCount } = await prisma.$transaction(async (tx) => {
+        const created = await tx.note.create({
+          ...query,
+          data: {
+            contactId: String(args.contactId),
+            body: args.body,
+            noteDate: parseDate(args.noteDate, 'noteDate'),
+            origin: 'manual',
+          },
+        });
+        const count = await tx.conversation.count({ where: { contactId: String(args.contactId) } });
+        return { note: created, convoCount: count };
       });
 
-      const convoCount = await prisma.conversation.count({ where: { contactId: String(args.contactId) } });
       if (convoCount === 0) {
+        await prisma.contact.update({ where: { id: String(args.contactId) }, data: { aiStatus: 'processing' } });
         void triggerGeneration(String(args.contactId), 'notes-only');
       }
 
@@ -51,7 +66,7 @@ builder.mutationField('updateNote', (t) =>
         where: { id: String(args.id) },
         data: {
           ...(args.body != null ? { body: args.body } : {}),
-          ...(args.noteDate != null ? { noteDate: new Date(args.noteDate) } : {}),
+          ...(args.noteDate != null ? { noteDate: parseDate(args.noteDate, 'noteDate') } : {}),
         },
       });
     },
@@ -95,7 +110,7 @@ builder.mutationField('addConversation', (t) =>
         ...query,
         data: {
           contactId: String(args.contactId),
-          convoDate: new Date(args.convoDate),
+          convoDate: parseDate(args.convoDate, 'convoDate'),
           transcript: JSON.stringify(turns),
           speakerCount,
           summary: null,
@@ -122,6 +137,10 @@ builder.mutationField('generateForContact', (t) =>
       });
 
       if (contact.notes.length === 0 && contact.conversations.length === 0) {
+        return contact;
+      }
+
+      if (contact.aiStatus === 'processing') {
         return contact;
       }
 
@@ -173,40 +192,42 @@ async function triggerGeneration(contactId: string, mode: 'convo' | 'notes-only'
       },
     };
 
-    const result = await extractionClient.generate(req);
+    const result = await getExtractionClient().generate(req);
 
-    await prisma.note.deleteMany({ where: { contactId, origin: 'ai' } });
-    await prisma.followup.deleteMany({ where: { contactId, origin: 'ai', status: 'open' } });
+    await prisma.$transaction(async (tx) => {
+      await tx.note.deleteMany({ where: { contactId, origin: 'ai' } });
+      await tx.followup.deleteMany({ where: { contactId, origin: 'ai', status: 'open' } });
 
-    if (mode === 'convo' && result.notes.length > 0) {
-      await prisma.note.createMany({
-        data: result.notes.map((n) => ({
-          contactId,
-          body: n.text,
-          noteDate: new Date(n.date),
-          origin: 'ai',
-          sourceConvoId: n.convo_id,
-        })),
-      });
-    }
+      if (mode === 'convo' && result.notes.length > 0) {
+        await tx.note.createMany({
+          data: result.notes.map((n) => ({
+            contactId,
+            body: n.text,
+            noteDate: new Date(n.date),
+            origin: 'ai',
+            sourceConvoId: n.convo_id,
+          })),
+        });
+      }
 
-    if (result.actions.length > 0) {
-      await prisma.followup.createMany({
-        data: result.actions.map((a) => ({
-          contactId,
-          description: a.description,
-          dueDate: a.due_date ? new Date(a.due_date) : null,
-          status: 'open',
-          sourceType: a.source_type,
-          sourceId: a.source_id,
-          origin: 'ai',
-        })),
-      });
-    }
+      if (result.actions.length > 0) {
+        await tx.followup.createMany({
+          data: result.actions.map((a) => ({
+            contactId,
+            description: a.description,
+            dueDate: a.due_date ? new Date(a.due_date) : null,
+            status: 'open',
+            sourceType: a.source_type,
+            sourceId: a.source_id,
+            origin: 'ai',
+          })),
+        });
+      }
+    });
 
     await prisma.contact.update({ where: { id: contactId }, data: { aiStatus: 'done' } });
   } catch (err) {
-    console.error(`[generate] failed for ${contactId}:`, (err as Error).message);
+    logger.error('Generation failed', { contactId, err: err instanceof Error ? err.stack : String(err) });
     await prisma.contact.update({ where: { id: contactId }, data: { aiStatus: 'failed' } });
   }
 }
