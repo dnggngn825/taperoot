@@ -30,11 +30,11 @@
 
 ## Phase 3 — Extraction service: contract + gRPC server + mock
 
-- [ ] `npm run dev:extraction` boots; logs `listening :50051`
-- [ ] gRPC smoke call on a context with 1 conversation → returns 1 `ExtractedNote` + ≥1 `ExtractedAction`
-- [ ] Context with notes only → returns `notes: []` + ≥1 action
-- [ ] Empty context → `{ notes:[], actions:[] }` (no crash)
-- [ ] Passes with **no** `ANTHROPIC_API_KEY`
+- [x] `npm run dev:extraction` boots; logs `listening :50051`
+- [x] gRPC smoke call on a context with 1 conversation → returns 1 `ExtractedNote` + ≥1 `ExtractedAction`
+- [x] Context with notes only → returns `notes: []` + ≥1 action
+- [x] Empty context → `{ notes:[], actions:[] }` (no crash)
+- [x] Passes with **no** `ANTHROPIC_API_KEY`
 
 ---
 
