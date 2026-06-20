@@ -1,0 +1,33 @@
+# Dependencies — installed inside the image (npm install)
+**/node_modules
+
+# Secrets / env — never send into the build context or images
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Local SQLite database — provided at runtime via a mounted volume, not baked in
+data/
+
+# Build outputs — regenerated inside the image
+**/dist
+
+# Version control & meta
+.git
+.gitignore
+.dockerignore
+
+# Test artifacts
+test-results
+playwright-report
+.playwright
+
+# Docs & design assets — not needed at runtime
+doc
+
+# Editor / OS noise
+.vscode
+.idea
+.DS_Store
+*.log

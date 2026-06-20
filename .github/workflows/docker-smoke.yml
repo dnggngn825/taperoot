@@ -1,0 +1,52 @@
+name: docker-smoke
+
+# Proves the stack builds and runs from a clean checkout — no local .env,
+# no node_modules, no pre-seeded data/*.db (all gitignored). This is the
+# durable version of "does it run on someone else's machine?".
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      # No ANTHROPIC_API_KEY on purpose: the extraction service must fall back
+      # to its built-in mock so the stack runs fully offline.
+      - name: Build and start the stack
+        run: docker compose up --build -d
+
+      - name: Wait for API (migrate + seed + GraphQL) and verify seed data
+        run: |
+          for i in $(seq 1 60); do
+            body=$(curl -fsS http://localhost:4000/graphql \
+              -H 'content-type: application/json' \
+              -d '{"query":"{ contacts { id name } }"}' 2>/dev/null) && \
+            echo "$body" | grep -q '"name"' && {
+              echo "API up and seeded:"; echo "$body"; exit 0; }
+            echo "waiting for api... ($i)"; sleep 5
+          done
+          echo "API did not become ready in time"; exit 1
+
+      - name: Wait for web
+        run: |
+          for i in $(seq 1 30); do
+            curl -fsS -o /dev/null http://localhost:8080 && {
+              echo "web serving on :8080"; exit 0; }
+            echo "waiting for web... ($i)"; sleep 5
+          done
+          echo "web did not become ready in time"; exit 1
+
+      - name: Dump logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
