@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(uuid())
+  name      String
+  email     String
+  contacts  Contact[]
+  createdAt DateTime  @default(now())
+}
+
+model Contact {
+  id            String         @id @default(uuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id])
+  name          String
+  company       String?
+  role          String?
+  email         String?
+  /// idle | processing | done | failed
+  aiStatus      String         @default("idle")
+  createdAt     DateTime       @default(now())
+  notes         Note[]
+  conversations Conversation[]
+  followups     Followup[]
+}
+
+model Note {
+  id            String   @id @default(uuid())
+  contactId     String
+  contact       Contact  @relation(fields: [contactId], references: [id])
+  body          String
+  noteDate      DateTime
+  /// manual | ai
+  origin        String   @default("manual")
+  sourceConvoId String?
+  createdAt     DateTime @default(now())
+}
+
+model Conversation {
+  id           String   @id @default(uuid())
+  contactId    String
+  contact      Contact  @relation(fields: [contactId], references: [id])
+  convoDate    DateTime
+  summary      String?
+  /// JSON string: [{ speaker: string, text: string }]
+  transcript   String
+  speakerCount Int
+  createdAt    DateTime @default(now())
+}
+
+model Followup {
+  id          String    @id @default(uuid())
+  contactId   String
+  contact     Contact   @relation(fields: [contactId], references: [id])
+  description String
+  dueDate     DateTime?
+  /// open | done
+  status      String    @default("open")
+  /// note | conversation | manual
+  sourceType  String
+  sourceId    String?
+  /// ai | manual
+  origin      String    @default("ai")
+  createdAt   DateTime  @default(now())
+}
