@@ -195,15 +195,14 @@
 
 ---
 
-## Phase 7 — Web: contacts list + search
+## Phase 7 — Web: contacts list
 
-**Goal:** browse + search contacts in the browser, wired to GraphQL.
+**Goal:** browse contacts in the browser, wired to GraphQL. *(Search deferred — out of scope for now.)*
 
 **Tasks**
 
 - [ ] `web`: Vite + React + TS + urql; client → `:4000/graphql`
-- [ ] Contacts page: `contacts(q, sort)`; cards (name, company, `openFollowupCount`, `lastActivityAt`)
-- [ ] Debounced search box → refetch
+- [ ] Contacts page: `contacts(sort)`; cards (name, company, `openFollowupCount`, `lastActivityAt`)
 - [ ] Sort toggle: **Recent update** / **Alphabetical** — passes `sort` arg; default `recent_update`
 - [ ] Minimal CSS; loading + empty states
 
@@ -211,7 +210,6 @@
 
 - [ ] `npm run dev:web` serves; page lists 6 contacts sorted by recent update by default
 - [ ] Toggling sort to alphabetical re-orders the list A→Z
-- [ ] Typing in search filters the list; sort is preserved
 - [ ] Open-followup count renders per card
 - [ ] Empty + loading states handled
 

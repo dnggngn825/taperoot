@@ -17,6 +17,7 @@ export const builder = new SchemaBuilder<{
 });
 
 builder.queryType({});
+builder.mutationType({});
 
 export function buildSchema() {
   return builder.toSchema();

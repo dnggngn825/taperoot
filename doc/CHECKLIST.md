@@ -61,25 +61,24 @@
 
 ## Phase 6 — GraphQL API: write side + generateForContact
 
-- [ ] `addNote` persists with `origin: manual`; auto-triggers generation on notes-only contact; `aiStatus` transitions `processing` → `done`
-- [ ] `addNote` on contact with conversations → persists note only, does **not** auto-trigger
-- [ ] `updateNote` persists edits; does not re-trigger generation
-- [ ] `addConversation` parses raw text → structured transcript; saved with `summary: null`; does **not** trigger generation
-- [ ] Explicit `generateForContact` on contact with conversations → AI notes (one per convo, `origin: ai`) + followups appear after `done`
-- [ ] Notes-only path → no AI notes created; only followups
-- [ ] Generating twice → same set (no dupes); `done` followups survive; `origin=manual` notes and followups survive
-- [ ] Eligibility guard: no notes + no convos → `aiStatus` stays `idle`
-- [ ] `updateFollowup` flips `open ↔ done`
-- [ ] `npm run test:api` exits 0; all cases print PASS
-- [ ] ✅ e2e: seed → add conversation → generateForContact → poll `aiStatus` → AI notes + followups appear
+- [x] `addNote` persists with `origin: manual`; auto-triggers generation on notes-only contact; `aiStatus` transitions `processing` → `done`
+- [x] `addNote` on contact with conversations → persists note only, does **not** auto-trigger
+- [x] `updateNote` persists edits; does not re-trigger generation
+- [x] `addConversation` parses raw text → structured transcript; saved with `summary: null`; does **not** trigger generation
+- [x] Explicit `generateForContact` on contact with conversations → AI notes (one per convo, `origin: ai`) + followups appear after `done`
+- [x] Notes-only path → no AI notes created; only followups
+- [x] Generating twice → same set (no dupes); `done` followups survive; `origin=manual` notes and followups survive
+- [x] Eligibility guard: no notes + no convos → `aiStatus` stays `idle`
+- [x] `updateFollowup` flips `open ↔ done`
+- [x] `npm run test:api` exits 0; all cases print PASS
+- [x] ✅ e2e: seed → add conversation → generateForContact → poll `aiStatus` → AI notes + followups appear
 
 ---
 
-## Phase 7 — Web: contacts list + search
+## Phase 7 — Web: contacts list
 
 - [ ] `npm run dev:web` serves; page lists 6 contacts sorted by recent update by default
 - [ ] Toggling sort to alphabetical re-orders the list A→Z
-- [ ] Typing in search filters the list; sort is preserved
 - [ ] Open-followup count renders per card
 - [ ] Empty + loading states handled
 
