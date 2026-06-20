@@ -17,7 +17,7 @@ export function ContactSidebar({ contacts, fetching, error, activeId, sort, onSo
   return (
     <SidebarPanel title="Contacts" headerRight={<SortToggle value={sort} onChange={onSort} />}>
       {fetching && <div style={{ padding: '16px 8px', color: 'var(--muted)', fontSize: 13 }}>Loading…</div>}
-      {!!error && <div style={{ padding: '16px 8px', color: 'var(--coral-deep)', fontSize: 13 }}>Error loading contacts</div>}
+      {error != null && <div style={{ padding: '16px 8px', color: 'var(--coral-deep)', fontSize: 13 }}>Error loading contacts</div>}
       {!fetching && contacts.length === 0 && <div style={{ padding: '16px 8px', color: 'var(--muted)', fontSize: 13 }}>No contacts</div>}
       {contacts.map(c => (
         <ContactCard key={c.id} contact={c} selected={activeId === c.id} onClick={() => onSelect(c.id)} />

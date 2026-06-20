@@ -4,9 +4,9 @@ import type { ContactSummary } from '../../types.ts';
 
 export function ContactCard({ contact, selected, onClick }: { contact: ContactSummary; selected: boolean; onClick: () => void }) {
   return (
-    <div onClick={onClick} style={{
-      display: 'flex', alignItems: 'center', gap: 11, padding: '10px 11px',
-      borderRadius: 'var(--r-row)', cursor: 'pointer',
+    <button type="button" onClick={onClick} style={{
+      display: 'flex', alignItems: 'center', gap: 11, padding: '10px 11px', width: '100%', textAlign: 'left',
+      borderRadius: 'var(--r-row)', cursor: 'pointer', fontFamily: 'inherit',
       background: selected ? 'var(--card)' : 'transparent',
       border: selected ? '1px solid var(--border-card-2)' : '1px solid transparent',
       boxShadow: selected ? 'var(--shadow-sm)' : 'none',
@@ -19,6 +19,6 @@ export function ContactCard({ contact, selected, onClick }: { contact: ContactSu
         </div>
       </div>
       {contact.openFollowupCount > 0 && <Badge>{contact.openFollowupCount}</Badge>}
-    </div>
+    </button>
   );
 }

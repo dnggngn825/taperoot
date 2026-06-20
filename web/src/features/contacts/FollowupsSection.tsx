@@ -7,11 +7,12 @@ import type { Followup } from '../../types.ts';
 type Props = {
   followups: Followup[];
   contactEmail: string | null;
+  isSaving?: boolean;
   onTick: (id: string, status: string) => void | Promise<void>;
   onSave: (id: string, description: string) => void | Promise<void>;
 };
 
-export function FollowupsSection({ followups, contactEmail, onTick, onSave }: Props) {
+export function FollowupsSection({ followups, contactEmail, isSaving, onTick, onSave }: Props) {
   const edit = useInlineEdit();
   return (
     <div>
@@ -23,23 +24,23 @@ export function FollowupsSection({ followups, contactEmail, onTick, onSave }: Pr
           onBeginEdit={() => edit.begin(f.id, f.description)}
           onTick={() => onTick(f.id, f.status)}
           onSave={async () => { await onSave(f.id, edit.draft); edit.cancel(); }}
-          onCancel={edit.cancel} />
+          onCancel={edit.cancel} saving={isSaving} />
       ))}
     </div>
   );
 }
 
-function FollowupItem({ followup: f, contactEmail, editing, draft, onDraft, onBeginEdit, onTick, onSave, onCancel }: {
+function FollowupItem({ followup: f, contactEmail, editing, draft, onDraft, onBeginEdit, onTick, onSave, onCancel, saving }: {
   followup: Followup; contactEmail: string | null;
   editing: boolean; draft: string; onDraft: (v: string) => void;
-  onBeginEdit: () => void; onTick: () => void; onSave: () => void; onCancel: () => void;
+  onBeginEdit: () => void; onTick: () => void; onSave: () => void; onCancel: () => void; saving?: boolean;
 }) {
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10, padding: '10px 14px', background: 'var(--card)', borderRadius: 'var(--r-card)', border: '1px solid var(--border-card)' }}>
       <input type="checkbox" checked={f.status === 'done'} onChange={onTick} style={{ marginTop: 3, cursor: 'pointer', accentColor: 'var(--coral)' }} />
       <div style={{ flex: 1 }}>
         {editing ? (
-          <InlineEditor value={draft} onChange={onDraft} onSave={onSave} onCancel={onCancel} />
+          <InlineEditor value={draft} onChange={onDraft} onSave={onSave} onCancel={onCancel} disabled={saving} />
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: 14, color: f.status === 'done' ? 'var(--muted)' : 'var(--ink)', textDecoration: f.status === 'done' ? 'line-through' : 'none' }}>

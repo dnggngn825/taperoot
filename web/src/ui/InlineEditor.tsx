@@ -8,9 +8,10 @@ type Props = {
   multiline?: boolean;
   placeholder?: string;
   saveLabel?: string;
+  disabled?: boolean;
 };
 
-export function InlineEditor({ value, onChange, onSave, onCancel, multiline, placeholder, saveLabel = 'Save' }: Props) {
+export function InlineEditor({ value, onChange, onSave, onCancel, multiline, placeholder, saveLabel = 'Save', disabled }: Props) {
   const field: CSSProperties = {
     width: '100%', padding: multiline ? 8 : '4px 8px', borderRadius: 6,
     border: '1px solid var(--border)', fontSize: 13, fontFamily: 'var(--font-sans)', resize: 'vertical',
@@ -23,7 +24,7 @@ export function InlineEditor({ value, onChange, onSave, onCancel, multiline, pla
         <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={field} />
       )}
       <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-        <button onClick={onSave} style={{ padding: '4px 12px', background: 'var(--ink)', color: '#fff', border: 'none', borderRadius: 'var(--r-pill)', fontSize: 12, cursor: 'pointer' }}>{saveLabel}</button>
+        <button onClick={onSave} disabled={disabled} style={{ padding: '4px 12px', background: disabled ? 'var(--muted)' : 'var(--ink)', color: '#fff', border: 'none', borderRadius: 'var(--r-pill)', fontSize: 12, cursor: disabled ? 'not-allowed' : 'pointer' }}>{disabled ? 'Saving…' : saveLabel}</button>
         <button onClick={onCancel} style={{ padding: '4px 12px', background: 'none', border: '1px solid var(--border-btn)', borderRadius: 'var(--r-pill)', fontSize: 12, cursor: 'pointer' }}>Cancel</button>
       </div>
     </div>

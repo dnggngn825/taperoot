@@ -1,10 +1,13 @@
 export type ContactSort = 'recent_update' | 'alphabetical';
+export type NoteOrigin = 'manual' | 'ai';
+export type FollowupStatus = 'open' | 'done';
+export type AiStatus = 'idle' | 'processing' | 'done' | 'failed';
 
 export interface Note {
   id: string;
   body: string;
   noteDate: string;
-  origin: string;
+  origin: NoteOrigin;
   sourceConvoId: string | null;
 }
 
@@ -20,8 +23,8 @@ export interface Followup {
   id: string;
   description: string;
   dueDate: string | null;
-  status: string;
-  origin: string;
+  status: FollowupStatus;
+  origin: NoteOrigin;
 }
 
 export interface ContactSummary {
@@ -30,10 +33,9 @@ export interface ContactSummary {
   company: string | null;
   role: string | null;
   email: string | null;
-  aiStatus: string;
+  aiStatus: AiStatus;
   openFollowupCount: number;
   lastActivityAt: string | null;
-  /** ids only — used to pick a default contact that has conversations */
   conversations: { id: string }[];
 }
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation } from 'urql';
 import {
   CONTACT_QUERY,
@@ -9,12 +9,7 @@ import {
 } from '../lib/queries.ts';
 import type { ContactDetail } from '../types.ts';
 
-/**
- * Full contact graph + all the mutations that act on it. Owns the
- * aiStatus polling loop and refetch-after-mutation wiring so components
- * stay presentational. Pass `null` to pause (e.g. nothing selected yet).
- */
-export function useContactDetail(id: string | null) {
+export function useContactDetail(id: string | null, onMutated?: () => void) {
   const [{ data, fetching }, refetch] = useQuery({
     query: CONTACT_QUERY,
     variables: { id: id! },
@@ -30,6 +25,9 @@ export function useContactDetail(id: string | null) {
   const contact: ContactDetail | null = data?.contact ?? null;
   const isProcessing = contact?.aiStatus === 'processing';
 
+  const [isSaving, setIsSaving] = useState(false);
+  const [mutationError, setMutationError] = useState<string | null>(null);
+
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
     if (isProcessing) {
@@ -40,34 +38,53 @@ export function useContactDetail(id: string | null) {
     return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
   }, [isProcessing, refetch]);
 
-  const reload = () => refetch({ requestPolicy: 'network-only' });
+  const reload = () => {
+    refetch({ requestPolicy: 'network-only' });
+    onMutated?.();
+  };
 
   const generate = async () => {
     if (!id) return;
-    await generateM({ contactId: id });
+    setMutationError(null);
+    const res = await generateM({ contactId: id });
+    if (res.error) { setMutationError(res.error.message); return; }
     reload();
   };
 
   const addNote = async (body: string) => {
     if (!id || !body.trim()) return;
-    await addNoteM({ contactId: id, body, noteDate: new Date().toISOString().slice(0, 10) });
+    setMutationError(null);
+    setIsSaving(true);
+    const res = await addNoteM({ contactId: id, body, noteDate: new Date().toISOString().slice(0, 10) });
+    setIsSaving(false);
+    if (res.error) { setMutationError(res.error.message); return; }
     reload();
   };
 
   const updateNote = async (noteId: string, body: string) => {
-    await updateNoteM({ id: noteId, body });
+    setMutationError(null);
+    setIsSaving(true);
+    const res = await updateNoteM({ id: noteId, body });
+    setIsSaving(false);
+    if (res.error) { setMutationError(res.error.message); return; }
     reload();
   };
 
   const tickFollowup = async (followupId: string, status: string) => {
-    await updateFollowupM({ id: followupId, status: status === 'open' ? 'done' : 'open' });
+    setMutationError(null);
+    const res = await updateFollowupM({ id: followupId, status: status === 'open' ? 'done' : 'open' });
+    if (res.error) { setMutationError(res.error.message); return; }
     reload();
   };
 
   const saveFollowup = async (followupId: string, description: string) => {
-    await updateFollowupM({ id: followupId, description });
+    setMutationError(null);
+    setIsSaving(true);
+    const res = await updateFollowupM({ id: followupId, description });
+    setIsSaving(false);
+    if (res.error) { setMutationError(res.error.message); return; }
     reload();
   };
 
-  return { contact, fetching, isProcessing, generate, addNote, updateNote, tickFollowup, saveFollowup, reload };
+  return { contact, fetching, isProcessing, isSaving, mutationError, generate, addNote, updateNote, tickFollowup, saveFollowup, reload };
 }

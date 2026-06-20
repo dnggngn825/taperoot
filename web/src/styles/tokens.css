@@ -16,6 +16,10 @@
   --coral: #F7654E;
   --coral-deep: #C24A33;
 
+  --error-bg: #FFF0F0;
+  --error-border: #F5A5A5;
+  --error-text: #C0392B;
+
   --tag-coral-bg: #FBE0D8;
   --tag-coral-fg: #C24A33;
   --tag-ink-bg: #22201C;

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useContacts } from '../../hooks/useContacts.ts';
+import { useContactsContext } from '../../contexts/ContactsContext.tsx';
 import { useContactDetail } from '../../hooks/useContactDetail.ts';
 import { SidebarPanel } from '../../ui/SidebarPanel.tsx';
 import { ContactCard } from '../contacts/ContactCard.tsx';
@@ -8,7 +8,7 @@ import { ConversationDetail } from './ConversationDetail.tsx';
 import type { Conversation } from '../../types.ts';
 
 export function NotetakerView() {
-  const { contacts } = useContacts('recent_update');
+  const { contacts } = useContactsContext();
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const [selectedConvoId, setSelectedConvoId] = useState<string | null>(null);
 

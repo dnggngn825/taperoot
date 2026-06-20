@@ -11,6 +11,6 @@ export function useInlineEdit() {
     setDraft,
     isEditing: (id: string) => editingId === id,
     begin: (id: string, initial: string) => { setEditingId(id); setDraft(initial); },
-    cancel: () => setEditingId(null),
+    cancel: () => { setEditingId(null); setDraft(''); },
   };
 }

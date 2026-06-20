@@ -7,11 +7,12 @@ import type { Note } from '../../types.ts';
 
 type Props = {
   notes: Note[];
+  isSaving?: boolean;
   onAddNote: (body: string) => void | Promise<void>;
   onSaveNote: (id: string, body: string) => void | Promise<void>;
 };
 
-export function NotesSection({ notes, onAddNote, onSaveNote }: Props) {
+export function NotesSection({ notes, isSaving, onAddNote, onSaveNote }: Props) {
   const [adding, setAdding] = useState(false);
   const [newBody, setNewBody] = useState('');
   const edit = useInlineEdit();
@@ -44,15 +45,15 @@ export function NotesSection({ notes, onAddNote, onSaveNote }: Props) {
           editing={edit.isEditing(note.id)} draft={edit.draft} onDraft={edit.setDraft}
           onBeginEdit={() => edit.begin(note.id, note.body)}
           onSave={async () => { await onSaveNote(note.id, edit.draft); edit.cancel(); }}
-          onCancel={edit.cancel} />
+          onCancel={edit.cancel} saving={isSaving} />
       ))}
     </div>
   );
 }
 
-function NoteItem({ note, editing, draft, onDraft, onBeginEdit, onSave, onCancel }: {
+function NoteItem({ note, editing, draft, onDraft, onBeginEdit, onSave, onCancel, saving }: {
   note: Note; editing: boolean; draft: string; onDraft: (v: string) => void;
-  onBeginEdit: () => void; onSave: () => void; onCancel: () => void;
+  onBeginEdit: () => void; onSave: () => void; onCancel: () => void; saving?: boolean;
 }) {
   return (
     <div style={{ display: 'flex', gap: 12, marginBottom: 12, alignItems: 'flex-start' }}>
@@ -60,7 +61,7 @@ function NoteItem({ note, editing, draft, onDraft, onBeginEdit, onSave, onCancel
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>{formatDate(note.noteDate)}</div>
         {editing ? (
-          <InlineEditor value={draft} onChange={onDraft} onSave={onSave} onCancel={onCancel} multiline />
+          <InlineEditor value={draft} onChange={onDraft} onSave={onSave} onCancel={onCancel} multiline disabled={saving} />
         ) : (
           <div style={{ fontSize: 14, color: 'var(--ink)', lineHeight: 1.5 }}>
             {note.body}
