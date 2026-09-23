@@ -1,27 +1,21 @@
 # Taperoot — Design Document
 
 > *What grows after the tap.*
-> Post-tap relationship memory + follow-up for Blinq.
 
 | | |
 |---|---|
 | **Author** | Danny Nguyen |
 | **Date** | 2026-06-20 |
 | **Status** | Design locked — ready to build |
-| **Brief** | Blinq take-home: track contacts + context so following up is easy, not forgotten |
 | **Time budget** | ~3 hours (see [Phases](#16-phases--time-budget)) |
 
 ---
 
 ## 1. Problem & product interpretation
 
-A Blinq tap is the *handshake* — the start of a relationship, not the relationship. Today, everything after the tap (who they were, what you discussed, what you said you'd do) is left to memory. Blinq's thesis: the users who win are the ones who **follow up**.
+Taperoot acts like a virtual assistant that organizes contacts and helps users manage their professional connections, so people spend less time managing information and more time building meaningful human relationships. In an AI-driven era, its purpose is not to replace human interaction, but to remove administrative work and give people more time to focus on the conversations that matter.
 
-Blinq already ships a feature that **records a conversation and returns a diarised transcript (`Speaker 1/2/3`) + an AI summary**. That solves *capture*. The unsolved problem is the **layer on top**: turning that raw conversation (and any notes the user jots down) into **concrete follow-up actions** the user won't forget.
-
-**Taperoot is that layer.** It takes the context Blinq already captures and answers one question per contact: *"What do I need to do next with this person?"*
-
-This is deliberately built *on* Blinq's existing moat (the recorder), not next to it.
+It takes the context already captured and answers one question per contact: *"What do I need to do next with this person?"*
 
 ---
 
@@ -41,7 +35,7 @@ This is deliberately built *on* Blinq's existing moat (the recorder), not next t
 |---|---|
 | **Speaker → identity resolution** | A 2-person convo *could* be guessed, a 2–3-person one can't. We do not resolve who `Speaker N` is at all. A conversation is logged wholesale under a contact; we never need to know which speaker is the contact. |
 | Auth / multi-user | Single seeded owner. Not the interesting slice. |
-| Real Blinq recorder integration | We define the **input contract** (transcript JSON) and seed fixtures instead. |
+| Real recorder integration | We define the **input contract** (transcript JSON) and seed fixtures instead. |
 | Sending email | We generate a draft and open a `mailto:` — no SMTP. |
 | Semantic search | Keyword (SQL `LIKE`) is enough to prove the slice. |
 | Reminders / notifications | We store `due_date` + show a "due" state; no scheduler. |
@@ -54,11 +48,11 @@ Follow-ups are only generated for a contact that has **≥1 dated note OR ≥1 c
 ## 3. Assumptions
 
 1. The contact DB already exists and is seeded.
-2. A conversation = anonymous transcript (`Speaker 1/2/3`) + AI summary, **already produced by Blinq**.
+2. A conversation = anonymous transcript (`Speaker 1/2/3`) + AI summary, **already produced upstream**.
 3. A conversation is linked to exactly one contact (the user logged it under that person). Other speakers may be present; we don't model them.
 4. **We never resolve speaker identity** — the whole conversation is treated as one blob of relationship context. (This is the key simplification — it removes diarisation-mapping from the build entirely.)
 5. Because we don't resolve speakers, we do **not** split commitments into "mine vs theirs". We extract follow-up *actions* for the relationship as a whole.
-6. We have the contact's email (it came from their Blinq card) → we can prefill a follow-up draft.
+6. We have the contact's email (it came from their card) → we can prefill a follow-up draft.
 7. AI may be wrong; extracted follow-ups are editable and deletable by the user.
 
 ---
@@ -120,7 +114,7 @@ users (1) ───< contacts (1) ───< notes
 | | name | String | |
 | | company | String? | |
 | | role | String? | |
-| | email | String? | from their Blinq card; used for drafts |
+| | email | String? | from their card; used for drafts |
 | | aiStatus | String (`idle`\|`processing`\|`done`\|`failed`) | generation status; default `idle`; client polls while `processing` |
 | | createdAt | DateTime | |
 | **notes** | id | String (uuid) PK | |
@@ -133,7 +127,7 @@ users (1) ───< contacts (1) ───< notes
 | **conversations** | id | String (uuid) PK | |
 | | contactId | String FK→contacts | |
 | | convoDate | DateTime | when the conversation happened |
-| | summary | String? | Blinq's AI summary; null for manually-added convos |
+| | summary | String? | AI summary; null for manually-added convos |
 | | transcript | String (JSON) | `[{ speaker, text }]`, parsed with zod at the boundary |
 | | speakerCount | Int | 2 or 3 |
 | | createdAt | DateTime | |
@@ -327,7 +321,7 @@ On generate: delete `origin = ai` notes + `origin = ai, status = open` followups
 - **Model:** `claude-haiku-4-5-20251001` — fast and cheap, right for a demo; swappable to `claude-opus-4-8` by changing one constant.
 - **SDK:** `@anthropic-ai/sdk`, Messages API with a forced tool.
 - **Structured output:** the model is forced to call an `emit_followups` tool whose JSON schema mirrors `ExtractedAction`. No free-text parsing.
-- **Prompt shape:** *"You are helping a Blinq user follow up. Given this contact and the notes + conversation summaries/transcripts below, extract concrete next-step actions the user should take. Infer a due date when language implies one ('next week', 'by Friday'). Attribute each action to the note or conversation it came from. Do not invent actions that aren't supported by the context."*
+- **Prompt shape:** *"You are helping a user follow up. Given this contact and the notes + conversation summaries/transcripts below, extract concrete next-step actions the user should take. Infer a due date when language implies one ('next week', 'by Friday'). Attribute each action to the note or conversation it came from. Do not invent actions that aren't supported by the context."*
 - **Input:** name/company/role + every note (body + date) + every conversation (summary + transcript + date).
 - **Mock mode (important for graders):** the extractor sits behind an `Extractor` interface. With no `ANTHROPIC_API_KEY`, a deterministic heuristic extractor runs (regex over summaries/notes for action-ish phrases + relative-date parsing). **The whole app runs and demos end-to-end without an API key.**
 
@@ -489,7 +483,7 @@ Build order: **backend → server logic → API → UI**, with a cumulative clic
 
 1. **Speaker → contact resolution** — start with the 2-person case (one speaker is the owner), then group convos; attribute "mine vs theirs" commitments.
 2. **Nudge *them*** — surface things the *contact* promised and remind them.
-3. **Real Blinq recorder hook** — replace fixtures with the live transcript feed.
+3. **Real recorder hook** — replace fixtures with the live transcript feed.
 4. **Scheduled reminders** — act on `due_date` (push/email) instead of just displaying it.
 5. **Semantic search** — embeddings over notes + summaries; "who did I meet in fintech?"
 6. **Contact dedupe / merge** — same person across multiple conversations.
@@ -500,7 +494,7 @@ Build order: **backend → server logic → API → UI**, with a cumulative clic
 
 ## 19. README plan
 
-The README (read first by Blinq) will cover, in order:
+The README will cover, in order:
 1. One-line what + the product insight (build on the recorder, surface the follow-up).
 2. How to run (`docker compose up`, URLs, the keyless mock note).
 3. How I interpreted the brief.
