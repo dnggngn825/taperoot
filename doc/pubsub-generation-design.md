@@ -547,7 +547,7 @@ The §1–§13 design makes the *single-contact* trigger durable. This section m
 
 ### 14.1 Why — making the input contract concrete
 
-In the **real Blinq product** the transcript + AI summary are produced **in the cloud** (the recorder pipeline), and that pipeline emits a conversation with its **participants already identified** — the diarisation→identity mapping happens upstream, server-side, before anything reaches us. In this take-home that capture is **hardcoded/seeded as fixtures** ([DESIGN.md §2](./DESIGN.md#2-scope)/[§3](./DESIGN.md#3-assumptions): "Real Blinq recorder integration out of scope — we define the input contract and seed fixtures instead").
+In the **real product** the transcript + AI summary are produced **in the cloud** (the recorder pipeline), and that pipeline emits a conversation with its **participants already identified** — the diarisation→identity mapping happens upstream, server-side, before anything reaches us. In this take-home that capture is **hardcoded/seeded as fixtures** ([DESIGN.md §2](./DESIGN.md#2-scope)/[§3](./DESIGN.md#3-assumptions): "Real recorder integration out of scope — we define the input contract and seed fixtures instead").
 
 This section makes that "input contract" **concrete as a Pub/Sub ingestion event**:
 
@@ -589,7 +589,7 @@ The concrete form of DESIGN.md's "input contract (transcript JSON)". Published a
 {
   "conversationId": "cv_9",                  // required — the convo this transcript belongs to
   "convoDate":      "2026-06-24T10:00:00Z",  // ISO — when the conversation happened
-  "summary":        "Intro call about pilot", // Blinq's AI summary; null for manually-added convos
+  "summary":        "Intro call about pilot", // AI summary; null for manually-added convos
   "transcript":     "[{\"speaker\":\"Speaker 1\",\"text\":\"…\"}]", // JSON string, zod-validated at consume
   "participants": [                          // identified upstream (cloud) or supplied locally
     { "speakerLabel": "Speaker 1", "isOwner": true                      }, // owner = the users row; NO contactId; never persisted/generated
@@ -603,7 +603,7 @@ The concrete form of DESIGN.md's "input contract (transcript JSON)". Published a
 |---|---|---|---|
 | `conversationId` | string | yes | Convo whose slice is regenerated; flows into each fan-out message as `conversationId` (§4.1) and scopes idempotency (§14.7) |
 | `convoDate` | ISO string | yes | Conversation date; matches `conversations.convoDate` ([DESIGN.md §6](./DESIGN.md#6-data-model)) |
-| `summary` | string \| null | no | Blinq AI summary; `null` for manually-added convos (same nullability as today) |
+| `summary` | string \| null | no | AI summary; `null` for manually-added convos (same nullability as today) |
 | `transcript` | string (JSON) | yes | `[{ speaker, text }]`; **validated with zod at the consume boundary** ([DESIGN.md §6](./DESIGN.md#6-data-model)'s "guard the one untyped boundary") |
 | `participants[]` | array | yes | The identified participants: `{ speakerLabel, isOwner, contactId? }` — the in-scope output of the cloud's diarisation step |
 | `participants[].speakerLabel` | string | yes | The anonymous diarisation label (`Speaker N`) the recorder used |
