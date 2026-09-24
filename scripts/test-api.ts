@@ -167,6 +167,28 @@ async function main() {
     }
   } catch (e) { console.error('  ❌ test8 threw:', (e as Error).message); failed++; }
 
+  // ── Test 9: generated followups reference known input sources ───────────────
+  console.log('\nTest 9: generated followups → valid source references');
+  try {
+    const d = await gql(`{ contact(id: "${alice.id}") { notes { id } conversations { id } followups { origin sourceType sourceId } } }`);
+    const contact = d.contact as {
+      notes: { id: string }[];
+      conversations: { id: string }[];
+      followups: { origin: string; sourceType: string; sourceId: string | null }[];
+    };
+    const noteIds = new Set(contact.notes.map((note) => note.id));
+    const conversationIds = new Set(contact.conversations.map((conversation) => conversation.id));
+    const aiFollowups = contact.followups.filter((followup) => followup.origin === 'ai');
+    const allSourcesAreValid = aiFollowups.length > 0 && aiFollowups.every((followup) => (
+      followup.sourceId !== null && (
+        followup.sourceType === 'note'
+          ? noteIds.has(followup.sourceId)
+          : followup.sourceType === 'conversation' && conversationIds.has(followup.sourceId)
+      )
+    ));
+    assert('AI followups reference known notes or conversations', allSourcesAreValid);
+  } catch (e) { console.error('  ❌ test9 threw:', (e as Error).message); failed++; }
+
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed > 0 ? 1 : 0);
 }

@@ -13,6 +13,7 @@
     "dev:web": "npm run dev --workspace=web",
     "test:api": "tsx scripts/test-api.ts",
     "test:anthropic": "tsx --env-file=.env scripts/test-anthropic.ts",
+    "test:extraction": "tsx scripts/test-extraction-output.ts",
     "test:e2e": "playwright test",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
