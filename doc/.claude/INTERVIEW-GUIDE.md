@@ -1,6 +1,6 @@
 # Taperoot — Interview & Upskilling Guide
 
-> A friendly walkthrough of the Taperoot codebase, the questions a principal engineer would ask a mid-level candidate about it, and how to prepare for a Blinq-style system design session.
+> A friendly walkthrough of the Taperoot codebase, the questions a principal engineer would ask a mid-level candidate about it, and how to prepare for a system design interview.
 >
 > **Who this is for:** a junior engineer who wants to think like a mid/senior. Read it slowly, follow the file links, and try to answer the questions out loud before reading the model answers.
 
@@ -8,7 +8,7 @@
 
 ## Part 1 — What Taperoot is, in plain English
 
-**The product idea:** A Blinq tap starts a relationship. Taperoot helps you *keep* it. You open a contact, and it shows you exactly what to do next — turning your notes and conversation transcripts into a short list of follow-up actions, some written by you, some suggested by AI.
+**The product idea:** Meeting someone starts a relationship. Taperoot helps you *keep* it. You open a contact, and it shows you exactly what to do next — turning your notes and conversation transcripts into a short list of follow-up actions, some written by you, some suggested by AI.
 
 That's the whole product in one sentence: **open a contact, see what to do next.**
 
@@ -87,7 +87,7 @@ Good engineering is as much about what you *don't* build. The README is upfront 
 
 - **No search.** The brief literally calls search "the problem" as a list grows — but with ~6 contacts and 3 hours, a list + detail view proves the value. Search is "the first thing I'd add next."
 - **No auth.** There's one hard-coded owner. (And note: the single-`contact` query doesn't even check ownership — any UUID works. Fine for a demo, not for production.)
-- **One contact per conversation.** In real Blinq, one conversation can involve many people. Taperoot simplifies to one — supporting many would need a join table.
+- **One contact per conversation.** A group conversation can involve many people. Taperoot simplifies to one contact — supporting multiple contacts would need a join table.
 - **SQLite, not Postgres.** A single file, no server, no credentials. The README notes switching to Postgres is "a one-line Prisma change."
 - **AI as a separate service.** Slightly more infrastructure than a 3-hour PoC needs — but it means the rest of the app never knows which model is running. Swapping models touches only that one service.
 
@@ -213,9 +213,9 @@ Difficulty ladder: **#A and #B are good mid-level core. #C is the discriminator.
 
 ---
 
-## Part 3 — System design prep for a Blinq session
+## Part 3 — System design practice for Taperoot
 
-Blinq's world is **mobile-first, read-heavy (millions of taps), event-driven, and increasingly AI-assisted.** A system design interview there will probe how you handle scale, failure, and the messy real world — especially **unreliable mobile networks.** Below are five design problems to practice, each tied to something concrete in Taperoot so the link feels real, plus the open questions you should be ready to answer.
+A contact follow-up tool needs a fast path to profile views, reliable event-driven processing, and useful AI assistance. A system design interview can probe how you handle scale, failure, and messy real-world conditions — especially **unreliable mobile networks.** Below are five design problems grounded in Taperoot, plus open questions to help pressure-test your answers.
 
 > **How to use these:** for each one, sketch the boxes, then *attack your own design* with the "open questions." The best system design candidates spend half their time on failure and edge cases, not the happy path.
 
@@ -228,8 +228,8 @@ Blinq's world is **mobile-first, read-heavy (millions of taps), event-driven, an
 - **Idempotency & state machines** — making retries safe; "exactly-once effects on at-least-once delivery."
 - **Data modeling & migrations** — indexes, denormalization, zero-downtime schema changes.
 
-### Problem 1 — "Design viewing a Blinq card at the moment of a tap." *(read-heavy + the network)*
-**Relevant because:** this *is* Blinq's core moment, and it's where weak networks bite hardest. *Taperoot link:* the web app loads a contact graph in one request — now imagine that at millions of taps a day.
+### Problem 1 — "Design opening a contact after a tap." *(read-heavy + the network)*
+**Relevant because:** fast access to a contact matters right after capture, especially on a weak connection. *Taperoot link:* the web app loads a contact graph in one request — now consider the read path as the user base grows.
 
 **Practice the design of:** edge caching / CDN for profile data, a fast read path, image/asset optimization, and graceful degradation.
 
@@ -272,7 +272,7 @@ Blinq's world is **mobile-first, read-heavy (millions of taps), event-driven, an
 - *"`dueDate` is nullable and unindexed. What does the scan cost at scale, and what do you add?"*
 
 ### Problem 5 — "Design capturing a contact with no signal." *(offline-first — the weak-network problem)*
-**Relevant because:** this directly answers "*how do you scan a profile when the network is weak?*" — the most Blinq-shaped question of all. *Taperoot link:* every Taperoot mutation assumes the network is up and refetches immediately; reality on a conference floor is not that.
+**Relevant because:** this asks how contact capture works when the network is weak. *Taperoot link:* every Taperoot mutation currently assumes the network is up and refetches immediately; reality at an event or on the move can be different.
 
 **Practice the design of:** a local-first capture flow — write to local storage first, queue the change, sync when connectivity returns, and resolve conflicts.
 
@@ -287,7 +287,7 @@ Blinq's world is **mobile-first, read-heavy (millions of taps), event-driven, an
 1. **Clarify scope first.** Ask what scale, what platform, what's in/out — exactly the muscle the take-home rewarded.
 2. **Happy path, then break it.** Draw the boxes, then immediately ask "what happens when this fails?" Interviewers score the failure thinking highest.
 3. **Name your trade-offs out loud.** "I'd use last-write-wins because it's simple, at the cost of losing concurrent edits" beats a silent perfect-looking diagram.
-4. **Tie it back to the product.** Blinq is a product company — connect every technical choice to user value (the follow-up that doesn't get forgotten).
+4. **Tie it back to the user.** Connect every technical choice to user value — the follow-up that doesn't get forgotten.
 
 ---
 

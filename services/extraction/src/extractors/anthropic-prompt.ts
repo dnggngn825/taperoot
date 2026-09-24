@@ -1,6 +1,6 @@
 import type { ContactContext } from '../types.js';
 
-export const SYSTEM_PROMPT = `You are helping a Blinq user follow up with their contacts.
+export const SYSTEM_PROMPT = `You are helping the user follow up with their contacts.
 Given a contact and their notes and conversation summaries/transcripts, extract:
 1. A short AI-generated note for each conversation (1-2 sentences summarising it)
 2. Concrete next-step follow-up actions the user should take

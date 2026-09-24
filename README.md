@@ -1,8 +1,8 @@
 # Taperoot
 
-> What grows after the tap. A follow-up helper for Blinq.
+> What grows after the tap. A personal follow-up assistant.
 
-A Blinq tap *starts* a relationship. But what happens next — who they were, what you talked about, what you said you'd do — usually lives in your head and gets forgotten. Blinq wins when its users actually follow up. Taperoot makes that effortless: it turns what Blinq already captures into a clear list of next steps for each contact.
+Meeting someone starts a relationship. Taperoot helps you *keep* it. Open a contact to see what to do next: a clear list of follow-up actions from your notes and conversation transcripts, some written by you, some suggested by AI.
 
 ![Taperoot contact detail — notes, AI-generated follow-ups, and the Generate button](doc/screenshot.png)
 
@@ -14,15 +14,15 @@ This README is about *how I thought about the product*, not a list of features.
 
 ## The problem I'm solving
 
-People are great at collecting contacts and bad at following up. The tap is easy; the follow-through is the hard, valuable part — it's where relationships and deals are won or lost. If Blinq makes the follow-up almost automatic, people get more from every contact and keep coming back. That outcome is what I aimed at.
+People are great at collecting contacts and bad at following up. Meeting someone is easy; the follow-through is the hard, valuable part — it's where relationships and deals are won or lost. Making follow-up almost automatic helps people get more from each connection. That's the outcome I aimed at.
 
 ---
 
 ## How I read the brief
 
-"Help people follow up" could mean "build another CRM." I don't think that's the win. Blinq already captures the moment really well — the tap, and the recorder that gives you a transcript and summary. The gap is everything *after*.
+"Help people follow up" could mean "build another CRM." I don't think that's the win. Taperoot starts with a contact and the notes or conversation summaries you already have. The gap is everything *after* the meeting.
 
-So Taperoot is a thin follow-up layer on top of what Blinq already does, not a place to manage data. Its one promise to the user: **open a contact, see exactly what to do next.**
+So Taperoot is a small, personal follow-up workspace, not a full CRM. Its one promise to the user: **open a contact, see exactly what to do next.**
 
 ---
 
@@ -40,7 +40,7 @@ So Taperoot is a thin follow-up layer on top of what Blinq already does, not a p
 - **Search** — the brief flags finding a person again as *the* problem as a list grows. With the ~3-hour budget and only a handful of contacts, the list + detail view is enough to prove the follow-up value, so I spent the time there. Basic name/company search is the first thing I'd add next.
 - Working out who each speaker is. Nice to have, but the follow-ups don't need it.
 - Sending the email for you — a draft is enough to prove the value.
-- Multi-contact conversations. In Blinq, a user can tag multiple contacts in one conversation so each person sees it on their device. Taperoot scopes each conversation to a single contact — the data model would need a many-to-many join to support it fully.
+- Multi-contact conversations. Each conversation currently belongs to one contact. Supporting a shared conversation across multiple contacts would need a many-to-many join.
 - Editing the speaker list on a conversation.
 
 ---
@@ -48,8 +48,8 @@ So Taperoot is a thin follow-up layer on top of what Blinq already does, not a p
 ## Assumptions (where the brief was unclear)
 
 1. Contacts already exist.
-2. A conversation comes from Blinq's recorder (an anonymous transcript + summary). I use it as-is.
-3. A conversation can involve multiple speakers and, in Blinq, can be tagged to multiple contacts. Taperoot simplifies this: each conversation belongs to one contact.
+2. A conversation comes from the app's notetaker (an anonymous transcript + summary). Taperoot uses it as-is.
+3. A conversation can involve multiple speakers and be relevant to multiple contacts. Taperoot simplifies this: each conversation belongs to one contact.
 4. The AI will sometimes be wrong, so everything it makes can be edited and re-runs are safe.
 5. I have the contact's email, so I can pre-fill a draft message.
 
