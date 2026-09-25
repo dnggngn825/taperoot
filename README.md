@@ -10,6 +10,25 @@ Meeting someone starts a relationship. Taperoot helps you *keep* it. Open a cont
 
 This README is about *how I thought about the product*, not a list of features.
 
+## Contents
+
+- [The problem I'm solving](#the-problem-im-solving)
+- [How I read the brief](#how-i-read-the-brief)
+- [What I built — and what I left out](#what-i-built--and-what-i-left-out)
+- [Assumptions (where the brief was unclear)](#assumptions-where-the-brief-was-unclear)
+- [Questions I'd ask a PM](#questions-id-ask-a-pm)
+- [How I'd know it's working](#how-id-know-its-working)
+- [Under the hood (kept simple on purpose)](#under-the-hood-kept-simple-on-purpose)
+- [What I'd do next](#what-id-do-next)
+- [Run it](#run-it)
+  - [With Docker](#with-docker)
+  - [Without Docker](#without-docker)
+- [Technical overview](#technical-overview)
+  - [Tech stack](#tech-stack)
+  - [Folder structure](#folder-structure)
+  - [Architecture](#architecture)
+  - [Data flow — generating follow-ups](#data-flow--generating-follow-ups)
+
 ---
 
 ## The problem I'm solving

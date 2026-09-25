@@ -6,6 +6,23 @@
 >
 > **Exit checklists are tracked live in [CHECKLIST.md](./CHECKLIST.md) — tick items off there after each phase.**
 
+## Contents
+
+- [Taperoot — Build Plan](#taperoot--build-plan)
+  - [Contents](#contents)
+  - [Conventions](#conventions)
+  - [Phase 1 — Monorepo scaffold, tooling \& Docker skeleton](#phase-1--monorepo-scaffold-tooling--docker-skeleton)
+  - [Phase 2 — Data layer (Prisma + SQLite + seed)](#phase-2--data-layer-prisma--sqlite--seed)
+  - [Phase 3 — Extraction service: contract + gRPC server + mock (runnable spine)](#phase-3--extraction-service-contract--grpc-server--mock-runnable-spine)
+  - [Phase 4 — Extraction service: real Haiku 4.5](#phase-4--extraction-service-real-haiku-45)
+  - [Phase 5 — GraphQL API: read side](#phase-5--graphql-api-read-side)
+  - [Phase 6 — GraphQL API: write side + async generateForContact + idempotency](#phase-6--graphql-api-write-side--async-generateforcontact--idempotency)
+  - [Phase 7 — Web: contacts list](#phase-7--web-contacts-list)
+  - [Phase 8 — Web: contact detail + notetaker](#phase-8--web-contact-detail--notetaker)
+  - [Phase 9 — README + Playwright e2e + final Docker run](#phase-9--readme--playwright-e2e--final-docker-run)
+  - [Definition of done (whole project)](#definition-of-done-whole-project)
+  - [Cut list (if time runs out, in this order)](#cut-list-if-time-runs-out-in-this-order)
+
 ---
 
 ## Conventions

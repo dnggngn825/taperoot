@@ -9,6 +9,29 @@
 | **Status** | Design locked — ready to build |
 | **Time budget** | ~3 hours (see [Phases](#16-phases--time-budget)) |
 
+## Contents
+
+- [1. Problem & product interpretation](#1-problem--product-interpretation)
+- [2. Scope](#2-scope)
+- [3. Assumptions](#3-assumptions)
+- [4. Open questions for the PM](#4-open-questions-for-the-pm)
+- [5. Architecture](#5-architecture)
+- [6. Data model](#6-data-model)
+- [7. GraphQL API](#7-graphql-api)
+- [8. Extraction service (gRPC)](#8-extraction-service-grpc)
+- [9. AI extraction logic](#9-ai-extraction-logic)
+- [10. Idempotency of `generateFollowups`](#10-idempotency-of-generatefollowups)
+- [11. Frontend](#11-frontend)
+- [12. Tech stack](#12-tech-stack)
+- [13. Repository structure](#13-repository-structure)
+- [14. Running it (Docker)](#14-running-it-docker)
+- [15. Testing strategy](#15-testing-strategy)
+- [16. Phases & time budget](#16-phases--time-budget)
+- [17. Trade-offs accepted](#17-trade-offs-accepted)
+- [18. What's next (with more time)](#18-whats-next-with-more-time)
+- [19. README plan](#19-readme-plan)
+- [20. Integration surface — how to connect the pieces](#20-integration-surface--how-to-connect-the-pieces)
+
 ---
 
 ## 1. Problem & product interpretation
@@ -503,7 +526,6 @@ The README will cover, in order:
 6. Key technical decisions + *why* (GraphQL for the graph; gRPC for the extraction seam; SQLite for a runnable single-user PoC; Haiku 4.5; no speaker resolution).
 7. Trade-offs accepted.
 8. What I'd do next.
-```
 
 ---
 
